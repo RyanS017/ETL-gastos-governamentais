@@ -1,10 +1,10 @@
-# 📊 Análise dos Gastos do Governo Federal (2015–2024)
+#  Análise dos Gastos do Governo Federal (2015–2024)
 
 Este projeto tem como objetivo analisar os **gastos do Governo Federal entre 2015 e 2024**, utilizando dados públicos para identificar padrões, evoluções e comparações entre diferentes mandatos presidenciais.
 
 ---
 
-## 🗂️ Escopo do Projeto
+##  Escopo do Projeto
 
 O período analisado abrange quatro mandatos:
 
@@ -16,7 +16,7 @@ O período analisado abrange quatro mandatos:
 
 ---
 
-## 📌 Questões de Pesquisa
+##  Questões de Pesquisa
 
 - Qual governo gastou mais com **TI, Saúde, Educação e Segurança Pública**?  
 - Qual governo gastou mais em **ano eleitoral**?  
@@ -27,12 +27,11 @@ O período analisado abrange quatro mandatos:
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
-- **Python 3.11**  
-- **Pandas / NumPy** → Tratamento e análise de dados  
-- ** Power BI ** → Visualizações gráficas  
-- ** Trello ** → Documentação e análises interativas  
+- **Microsoft SQL SERVER / TSQL**  → Modelagem de dados 
+- **Power BI** → Visualizações gráficas  
+- **Trello** → Documentação e análises interativas  
 - **Git / GitHub** → Controle de versão e colaboração  
 
 
@@ -41,17 +40,17 @@ O período analisado abrange quatro mandatos:
 
 ---
 
-## 👥 Integrantes
+##  Integrantes
 
-Nome: Leandro felix Da silva 
+ Leandro felix Da silva 
 
-Nome:  Marco Aurelio Quispe 
+  Marco Aurelio Quispe 
 
-Nome: Ryan Gabriel Da silva
+ Ryan Gabriel Da silva
 
-Nome: Mateus Gustavo De Oliveira 
+ Mateus Gustavo De Oliveira 
 
-Nome: Jhordan Oliveira Da costa 
+ Jhordan Oliveira Da costa 
 
 Nome: Lucas viera Dos santos 
 
