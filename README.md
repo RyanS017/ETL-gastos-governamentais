@@ -1,62 +1,51 @@
-#  Análise dos Gastos do Governo Federal (2015–2024)
+# Estudo sobre a Execução Orçamentária do Governo Federal (2015 - 2024)
 
-Este projeto tem como objetivo analisar os **gastos do Governo Federal entre 2015 e 2024**, utilizando dados públicos para identificar padrões, evoluções e comparações entre diferentes mandatos presidenciais.
+O presente projeto tem como finalidade examinar a evolução dos gastos públicos realizados pelo Governo Federal no período compreendido entre 2015 e 2024. A análise será conduzida com base em dados oficiais disponibilizados ao público, visando identificar padrões de despesa, tendências ao longo do tempo e estabelecer comparações entre diferentes administrações presidenciais.
 
----
+## Escopo dos Dados Analisados
 
-##  Escopo do Projeto
+O escopo temporal da presente análise abrange os quatro últimos mandatos presidenciais da República Federativa do Brasil, conforme segue:
 
-O período analisado abrange quatro mandatos:
+* [Luiz Inácio Lula da Silva](https://pt.wikipedia.org/wiki/Luiz_In%C3%A1cio_Lula_da_Silva) (2023 - *em curso*)
+* [Jair Bolsonaro](https://pt.wikipedia.org/wiki/Jair_Bolsonaro) (2019 - 2022)
+* [Michel Temer](https://pt.wikipedia.org/wiki/Michel_Temer) (2016 - 2018)
+* [Dilma Rousseff](https://pt.wikipedia.org/wiki/Dilma_Rousseff) (2015 - 2016)
 
-- **Dilma Rousseff (2015 – 2016)**  
-- **Michel Temer (2016 – 2019)**  
-- **Jair Bolsonaro (2019 – 2022)**  
-- **Luiz Inácio Lula da Silva (2023 – 2024\*)**  
-  \* Apenas os dois primeiros anos de governo, pois ainda está em andamento.
+> [!NOTE]
+> Dados do periodo vigente do mandato presidencial atual não serão analisados em sua completude por estarem em curso.
 
----
+## Plano de Análise
 
-##  Questões de Pesquisa
+O propósito central deste projeto consiste em realizar uma análise comparativa dos padrões de gastos públicos do Governo Federal, com vistas a responder às seguintes questões:
 
-- Qual governo gastou mais com **TI, Saúde, Educação e Segurança Pública**?  
-- Qual governo gastou mais em **ano eleitoral**?  
-- Qual governo gastou mais com **Cartão de Pagamento do Governo Federal**?  
-- Qual governo gastou mais com **Viagens a Serviço**?  
-- Quais áreas **perderam espaço orçamentário** e quais ganharam mais recursos?  
-- Como os gastos se comportaram durante a **pandemia de COVID-19**?  
-
----
+* Qual administração federal apresentou os maiores investimentos nas áreas de Tecnologia da Informação, Saúde, Educação e Segurança Pública?
+* Qual mandato registrou aumento significativo de despesas durante anos eleitorais?
+* Qual governo realizou os maiores desembolsos por meio do Cartão de Pagamento do Governo Federal (CPGF)?
+* Qual gestão apresentou os maiores gastos com viagens realizadas a serviço?
+* Quais setores da administração pública sofreram redução de alocação orçamentária e quais foram beneficiados com acréscimos de recursos?
+* De que forma os padrões de gasto público foram impactados ao longo do período de enfrentamento da pandemia da COVID-19?
 
 ## Tecnologias Utilizadas
 
-- **Microsoft SQL SERVER / TSQL**  → Modelagem de dados 
-- **Power BI** → Visualizações gráficas  
-- **Trello** → Documentação e análises interativas  
-- **Git / GitHub** → Controle de versão e colaboração  
-
-
-
-
-
----
+* **Gerenciamento:** [Atlassian Trello](https://trello.com/)
+* **Modelagem:** [JGraph Diagrams.net](https://app.diagrams.net/)
+* **Integração:** [Microsoft SQL Server Management Studio](https://www.microsoft.com/en-us/sql-server/sql-server-downloads)
+* **Versionamento:** [GitHub](https://github.com/)
+* **Documentação:** [Microsoft Word](https://word.cloud.microsoft/en-us/)
+* **Visualização:** [Microsoft Power BI](https://www.microsoft.com/en-us/power-platform/products/power-bi/downloads)
 
 ##  Integrantes
 
- Leandro felix Da silva 
+* Alex Avelino Alves
+* Jhordan Oliveira da Costa
+* João Pedro Tiburcio de Lima
+* João Vitor Borges
+* Leandro Félix da Silva
+* Lucas Vieira dos Santos
+* Marco Aurélio Quispe Layme
+* Mateus Gustavo de Oliveira
+* Ryan Gabriel da Silva
 
-  Marco Aurelio Quispe 
+##  Fontes Bibliográficas
 
- Ryan Gabriel Da silva
-
- Mateus Gustavo De Oliveira 
-
- Jhordan Oliveira Da costa 
-
-Nome: Lucas viera Dos santos 
-
-Nome: João Vitor Borges 
-
-Nome: João Pedro Tiburcio De Lima 
-
-Nome: Alex Avelino Alves
-
+<sup>[1]</sup> Controladoria-Geral da União ([Portal da Transparência](https://portaldatransparencia.gov.br/download-de-dados/))
