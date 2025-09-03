@@ -28,8 +28,9 @@ O propósito central deste projeto consiste em realizar uma análise comparativa
 ## Materiais Relacionados
 
 * [**Planejamento**](https://trello.com/invite/b/68a26b55adf5e387ecadddb6/ATTI939cde0af54a71ff3c7f2f833fbde5ea694D52F9/organizacao-projeto) (Trello)
-* [**Modelo Lógico**](https://drive.google.com/file/d/10KsQtyhNglqB2wWpPtrO3ri9Cd92kD9k/view?usp=sharing) (.pdf)
-* [**Modelo Físico**]() (.pdf)
+* [**Modelo**](https://app.diagrams.net/#G10KsQtyhNglqB2wWpPtrO3ri9Cd92kD9k) (Diagrams.net)
+> [!IMPORTANT]
+> Se faz necessária conta nessas plataformas
 
 ## Tecnologias Utilizadas
 
