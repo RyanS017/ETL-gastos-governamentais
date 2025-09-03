@@ -25,6 +25,12 @@ O propósito central deste projeto consiste em realizar uma análise comparativa
 * Quais setores da administração pública sofreram redução de alocação orçamentária e quais foram beneficiados com acréscimos de recursos?
 * De que forma os padrões de gasto público foram impactados ao longo do período de enfrentamento da pandemia da COVID-19?
 
+## Materiais Relacionados
+
+* [**Planejamento**](https://trello.com/invite/b/68a26b55adf5e387ecadddb6/ATTI939cde0af54a71ff3c7f2f833fbde5ea694D52F9/organizacao-projeto) (Trello)
+* [**Modelo Lógico**](https://drive.google.com/file/d/10KsQtyhNglqB2wWpPtrO3ri9Cd92kD9k/view?usp=sharing) (.pdf)
+* [**Modelo Físico**]() (.pdf)
+
 ## Tecnologias Utilizadas
 
 * **Gerenciamento:** [Atlassian Trello](https://trello.com/)
@@ -49,3 +55,16 @@ O propósito central deste projeto consiste em realizar uma análise comparativa
 ##  Fontes Bibliográficas
 
 <sup>[1]</sup> Controladoria-Geral da União ([Portal da Transparência](https://portaldatransparencia.gov.br/download-de-dados/))
+
+## Como Adquirir os Dados Utilizados na Análise
+
+1. Acesse o [Portal da Transparência](https://portaldatransparencia.gov.br/download-de-dados/) (*link direto*);
+2. Expanda a seção e clique no arquivo desejado;</br>
+  Obs.: Neste projeto foram utilizados os dados sob as seguintes seções:
+    * Despesas Públicas > Execução da despesa;
+    * Cartão de Pagamento > Cartão de Pagamento do Governo Federal (CPGF);
+    * Viagens a Serviço > Viagens a serviço.
+3. Selecione o exercício e o mês e clique no botão **Baixar**;
+
+> [!WARNING]
+> Em construção.
