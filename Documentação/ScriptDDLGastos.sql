@@ -1,4 +1,5 @@
 CREATE DATABASE ProjetoGastosGovernamentais
+GO
 
 USE ProjetoGastosGovernamentais
 GO
@@ -156,22 +157,6 @@ CREATE TABLE GastosCartao (
     FOREIGN KEY (IdMandato) REFERENCES Mandato(IdMandato) 
 );
 
-CREATE TABLE Pagamento (
-    IdPagamento INT PRIMARY KEY NOT NULL,
-    TipodePagamento VARCHAR (150) NOT NULL,
-    ValordaDespeza DECIMAL(18,2) NOT NULL,
-
-    IdOrgaoSuperior INT NOT NULL,
-    IdUnidadeGestoraPagadora INT    NOT NULL,
-    IdViagem INT NOT NULL,
-    IdOrgaoPagador INT NOT NULL,
-
-    FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
-    FOREIGN KEY (IdUnidadeGestoraPagadora) REFERENCES UnidadeGestoraPagadora(IdUnidadeGestoraPagadora),
-    FOREIGN KEY (IdViagem) REFERENCES Viagem(IdViagem),
-    FOREIGN KEY (IdOrgaoPagador) REFERENCES OrgaoPagador(IdOrgaoPagador)
-);
-
 CREATE TABLE OrgaoPagador (
     IdOrgaoPagador INT PRIMARY KEY NOT NULL,
     NomeOrgaoPagador VARCHAR (150) NOT NULL,
@@ -182,6 +167,20 @@ CREATE TABLE OrgaoPagador (
 CREATE TABLE UnidadeGestoraPagadora (
     IdUnidadeGestoraPagadora INT PRIMARY KEY NOT NULL,
     NomeUnidadeGestoraPagadora VARCHAR (150) NOT NULL,
+);
+
+CREATE TABLE OrgaoSolicitante
+(
+	IdOrgaoSolicitante INT PRIMARY KEY,
+	NomeOrgaoSolicitante VARCHAR(255) NOT NULL,
+	NomeUnidadeOrgaoSolicitante VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Viajante
+(
+	IdViajante INT PRIMARY KEY,
+	DocViajante VARCHAR(11) NOT NULL,
+	Cargo VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Viagem
@@ -200,18 +199,20 @@ CREATE TABLE Viagem
 	FOREIGN KEY (IdViajante) REFERENCES Viajante(IdViajante)
 );
 
-CREATE TABLE OrgaoSolicitante
-(
-	IdOrgaoSolicitante INT PRIMARY KEY,
-	NomeOrgaoSolicitante VARCHAR(255) NOT NULL,
-	NomeUnidadeOrgaoSolicitante VARCHAR(255) NOT NULL
-);
+CREATE TABLE Pagamento (
+    IdPagamento INT PRIMARY KEY NOT NULL,
+    TipodePagamento VARCHAR (150) NOT NULL,
+    ValordaDespeza DECIMAL(18,2) NOT NULL,
 
-CREATE TABLE Viajante
-(
-	IdViajante INT PRIMARY KEY,
-	DocViajante VARCHAR(11) NOT NULL,
-	Cargo VARCHAR(255) NOT NULL
+    IdOrgaoSuperior INT NOT NULL,
+    IdUnidadeGestoraPagadora INT    NOT NULL,
+    IdViagem INT NOT NULL,
+    IdOrgaoPagador INT NOT NULL,
+
+    FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
+    FOREIGN KEY (IdUnidadeGestoraPagadora) REFERENCES UnidadeGestoraPagadora(IdUnidadeGestoraPagadora),
+    FOREIGN KEY (IdViagem) REFERENCES Viagem(IdViagem),
+    FOREIGN KEY (IdOrgaoPagador) REFERENCES OrgaoPagador(IdOrgaoPagador)
 );
 
 CREATE TABLE Passagem
