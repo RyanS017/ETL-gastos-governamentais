@@ -178,13 +178,11 @@ CREATE TABLE ##temp_despesas_Convertido(
 
 INSERT INTO ##temp_despesas_Convertido
 SELECT
-    -- Data
     CASE 
         WHEN AnoMesLancamento IS NULL OR AnoMesLancamento = '' THEN NULL
         ELSE CAST(CONCAT(REPLACE(AnoMesLancamento,'/','-'), '-01') AS DATE)
     END AS AnoMesLancamento,
 
-    -- INTs
     CASE WHEN CodigoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSuperior AS INT) END,
     CAST(NomeOrgaoSuperior AS VARCHAR(150)),
 
@@ -235,7 +233,7 @@ SELECT
     CASE WHEN CodigoModalidadeDespesa IN ('','-1') THEN 0 ELSE CAST(CodigoModalidadeDespesa AS INT) END,
     CAST(ModalidadeDespesa AS VARCHAR(MAX)),
 
-    -- DECIMALs
+    
     CASE WHEN ValorEmpenhado IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorEmpenhado,',','.') AS DECIMAL(18,2)) END,
     CASE WHEN ValorLiquidado IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorLiquidado,',','.') AS DECIMAL(18,2)) END,
     CASE WHEN ValorPago IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorPago,',','.') AS DECIMAL(18,2)) END,
@@ -593,5 +591,6 @@ BEGIN
 EXEC SP_EXTRAI_CSV_DESPESAS @CAMINHO = @CAMINHO_CSV
 EXEC SP_TRATA_CSV_DESPESAS
 EXEC SP_CARREGA_CSV_DESPESAS
+DROP TABLE ####temp_despesas_Convertido
 END
 GO
