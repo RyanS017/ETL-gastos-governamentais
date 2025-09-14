@@ -16,19 +16,22 @@ CREATE TABLE OrgaoSubordinado (
     FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior)
 );
 
+CREATE TABLE Gestao (
+    IdGestao INT PRIMARY KEY,
+    NomeGestao VARCHAR(150) NOT NULL,
+);
+
 CREATE TABLE UnidadeGestora (
     IdUnidadeGestora INT PRIMARY KEY,
     NomeUnidadeGestora VARCHAR(150) NOT NULL,
     IdOrgaoSuperior INT NOT NULL,
-    FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior)
+	IdGestao INT NOT NULL,
+    FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
+	FOREIGN KEY (IdGestao) REFERENCES Gestao(IdGestao)
 );
 
-CREATE TABLE Gestao (
-    IdGestao INT PRIMARY KEY,
-    NomeGestao VARCHAR(150) NOT NULL,
-    IdUnidadeGestora INT NOT NULL,
-    FOREIGN KEY (IdUnidadeGestora) REFERENCES UnidadeGestora(IdUnidadeGestora)
-);
+
+
 
 CREATE TABLE GrupoDespesa (
     IdGrupoDespesa INT PRIMARY KEY,
@@ -88,7 +91,7 @@ CREATE TABLE SubFuncao (
 );
 
 CREATE TABLE Acao (
-    IdAcao INT PRIMARY KEY,
+    IdAcao VARCHAR(10) PRIMARY KEY,
     NomeAcao VARCHAR(150) NOT NULL
 );
 
@@ -111,7 +114,7 @@ CREATE TABLE Despesas (
     UF CHAR(2) NOT NULL CHECK (UF IN (
         'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA',
         'MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN',
-        'RS','RO','RR','SC','SP','SE','TO'
+        'RS','RO','RR','SC','SP','SE','TO', ''
     )),
     Municipio VARCHAR(150) NULL,
     ValorEmpenhado DECIMAL(18,2) NOT NULL DEFAULT 0,
@@ -123,11 +126,11 @@ CREATE TABLE Despesas (
     IdElementoDespesa INT NOT NULL,
     IdOrgaoSuperior INT NOT NULL,
     IdCategoriaEconomica INT NOT NULL,
-    IdGestao INT NOT NULL,
+    IdGestao INT NULL,
     IdProgramaOrcamentario INT NOT NULL,
     IdLocalizador INT NOT NULL,
     IdMandato INT NOT NULL,
-    IdAcao INT NOT NULL,
+    IdAcao VARCHAR(10) NOT NULL,
     IdFuncao INT NOT NULL,
 
     CONSTRAINT FK_Despesas_ElementoDespesa FOREIGN KEY (IdElementoDespesa) REFERENCES ElementoDespesa(IdElementoDespesa),
