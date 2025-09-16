@@ -323,8 +323,8 @@ WHERE rn = 1
   AND NOT EXISTS (
       SELECT 1 FROM UnidadeGestora u
       WHERE u.IdUnidadeGestora = CTE.CodigoUnidadeGestora
-        AND u.IdOrgaoSuperior = CTE.CodigoOrgaoSuperior
-        AND u.IdGestao = CTE.CodigoGestao
+       -- AND u.IdOrgaoSuperior = CTE.CodigoOrgaoSuperior
+       -- AND u.IdGestao = CTE.CodigoGestao
   );
 
 
@@ -496,18 +496,23 @@ WHERE rn = 1
       WHERE s.IdSubFuncao = CTE.CodigoSubfuncao
   );
 
-
- INSERT INTO Acao (IdAcao, NomeAcao)
-SELECT DISTINCT CodigoAcao, NomeAcao
-FROM ##temp_despesas_Convertido t
-WHERE CodigoAcao <> '0'  -- trata zeros se necessário
+  ;WITH CTE AS (
+    SELECT 
+        CodigoAcao,
+        NomeAcao,
+        ROW_NUMBER() OVER(PARTITION BY CodigoAcao ORDER BY CodigoAcao) AS rn
+    FROM ##temp_despesas_Convertido
+    WHERE CodigoAcao <> '0'  -- remove valores inválidos
+)
+INSERT INTO Acao (IdAcao, NomeAcao)
+SELECT CodigoAcao, NomeAcao
+FROM CTE
+WHERE rn = 1
   AND NOT EXISTS (
       SELECT 1 
       FROM Acao a
-      WHERE a.IdAcao = t.CodigoAcao
+      WHERE a.IdAcao = CTE.CodigoAcao
   );
-
-
 
 INSERT INTO Despesas (
     DataLancamento,
@@ -591,6 +596,6 @@ BEGIN
 EXEC SP_EXTRAI_CSV_DESPESAS @CAMINHO = @CAMINHO_CSV
 EXEC SP_TRATA_CSV_DESPESAS
 EXEC SP_CARREGA_CSV_DESPESAS
-DROP TABLE ####temp_despesas_Convertido
+DROP TABLE ##temp_despesas_Convertido
 END
 GO
