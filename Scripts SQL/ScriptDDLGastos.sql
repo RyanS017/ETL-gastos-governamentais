@@ -25,7 +25,7 @@ CREATE TABLE UnidadeGestora (
     IdUnidadeGestora INT PRIMARY KEY,
     NomeUnidadeGestora VARCHAR(150) NOT NULL,
     IdOrgaoSuperior INT NOT NULL,
-	IdGestao INT NOT NULL,
+	IdGestao INT NULL,
     FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
 	FOREIGN KEY (IdGestao) REFERENCES Gestao(IdGestao)
 );
@@ -148,16 +148,17 @@ CREATE TABLE GastosCartao (
     IdGastosCartao INT PRIMARY KEY NOT NULL,
     DataTransacao DATE NOT NULL,
     ValorTransacao DECIMAL (18,2),
-    DescricaoTranssacao VARCHAR(255) NOT NULL,
     DataExtrato DATE,
 
     IdOrgaoSuperior INT NOT NULL,
-    IdUnidadeGestora INT NOT NULL,
+	IdUnidadeGestora INT NOT NULL,
     IdMandato INT NOT NULL,
+	IdOrgaoSubordinado INT NOT NULL,
 
     FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
     FOREIGN KEY (IdUnidadeGestora) REFERENCES UnidadeGestora(IdUnidadeGestora), 
-    FOREIGN KEY (IdMandato) REFERENCES Mandato(IdMandato) 
+    FOREIGN KEY (IdMandato) REFERENCES Mandato(IdMandato),
+	CONSTRAINT FK_GastoCartão_OrgaoSubordinado FOREIGN KEY (IdOrgaoSubordinado) REFERENCES OrgaoSubordinado(IdOrgaoSubordinado)
 );
 
 CREATE TABLE OrgaoPagador (
