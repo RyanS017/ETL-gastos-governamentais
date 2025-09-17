@@ -128,7 +128,7 @@ CREATE TABLE Despesas (
     IdCategoriaEconomica INT NOT NULL,
     IdGestao INT NULL,
     IdProgramaOrcamentario INT NOT NULL,
-    IdLocalizador INT NOT NULL,
+    IdLocalizador INT NULL,
     IdMandato INT NOT NULL,
     IdAcao VARCHAR(10) NOT NULL,
     IdFuncao INT NOT NULL,

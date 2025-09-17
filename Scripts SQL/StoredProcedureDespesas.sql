@@ -547,8 +547,8 @@ SELECT
     t.CodigoCategoriaEconomica,
     NULLIF(t.CodigoGestao, 0),
     t.CodigoProgramaOrcamentario,
-    t.CodigoLocalizador,
-    m.IdMandato, -- pega o mandato correto pelo ano
+    NULLIF(t.CodigoLocalizador,0),
+    m.IdMandato, 
     t.CodigoAcao,
     t.CodigoFuncao
 FROM ##temp_despesas_Convertido t
