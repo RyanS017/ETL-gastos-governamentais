@@ -164,8 +164,6 @@ CREATE TABLE GastosCartao (
 CREATE TABLE OrgaoPagador (
     IdOrgaoPagador INT PRIMARY KEY NOT NULL,
     NomeOrgaoPagador VARCHAR (150) NOT NULL,
-    DocViajante VARCHAR (150) NOT NULL,
-    Cargo VARCHAR (150) NOT NULL,
 );
 
 CREATE TABLE UnidadeGestoraPagadora (
@@ -177,15 +175,8 @@ CREATE TABLE OrgaoSolicitante
 (
 	IdOrgaoSolicitante INT PRIMARY KEY,
 	NomeOrgaoSolicitante VARCHAR(255) NOT NULL,
-	NomeUnidadeOrgaoSolicitante VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE Viajante
-(
-	IdViajante INT PRIMARY KEY,
-	DocViajante VARCHAR(11) NOT NULL,
-	Cargo VARCHAR(255) NOT NULL
-);
 
 CREATE TABLE Viagem
 (
@@ -195,23 +186,21 @@ CREATE TABLE Viagem
 	Destinos VARCHAR(255) NOT NULL,
 	Motivo VARCHAR(255) NOT NULL,
 	Gastos DECIMAL(18,2) NOT NULL DEFAULT 0.00,
-	IdOrgaoSuperior INT NOT NULL,
-	IdOrgaoSolicitante INT NOT NULL,
-	IdViajante INT NOT NULL,
+	IdOrgaoSuperior INT NULL,
+	IdOrgaoSolicitante INT NULL,
 	FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
 	FOREIGN KEY (IdOrgaoSolicitante) REFERENCES OrgaoSolicitante(IdOrgaoSolicitante),
-	FOREIGN KEY (IdViajante) REFERENCES Viajante(IdViajante)
 );
 
 CREATE TABLE Pagamento (
-    IdPagamento INT PRIMARY KEY NOT NULL,
+    IdPagamento BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL,
     TipodePagamento VARCHAR (150) NOT NULL,
     ValordaDespeza DECIMAL(18,2) NOT NULL,
 
-    IdOrgaoSuperior INT NOT NULL,
-    IdUnidadeGestoraPagadora INT    NOT NULL,
+    IdOrgaoSuperior INT NULL,
+    IdUnidadeGestoraPagadora INT NULL,
     IdViagem INT NOT NULL,
-    IdOrgaoPagador INT NOT NULL,
+    IdOrgaoPagador INT NULL,
 
     FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),
     FOREIGN KEY (IdUnidadeGestoraPagadora) REFERENCES UnidadeGestoraPagadora(IdUnidadeGestoraPagadora),
@@ -221,7 +210,7 @@ CREATE TABLE Pagamento (
 
 CREATE TABLE Passagem
 (
-	IdPassagem INT PRIMARY KEY,
+	IdPassagem BIGINT IDENTITY(1,1) PRIMARY KEY ,
 	MeioTransporte VARCHAR(255) NOT NULL,
 	Origem VARCHAR(255) NOT NULL,
 	Destino VARCHAR(255) NOT NULL,

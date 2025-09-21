@@ -5,6 +5,9 @@ CREATE PROCEDURE SP_EXTRAI_CSV_DESPESAS
 @CAMINHO VARCHAR(150)
 AS
 BEGIN
+	IF OBJECT_ID('tempdb..##temp_depesas') IS NOT NULL
+    DROP TABLE ##temp_depesas;
+
 	CREATE TABLE ##temp_depesas(
 		AnoMesLancamento VARCHAR(MAX),
 		CodigoOrgaoSuperior VARCHAR(MAX),
@@ -133,6 +136,8 @@ WHERE CodigoOrgaoSuperior = '-1'
 ALTER TABLE ##temp_depesas 
 DROP COLUMN CodigoProgramaGoverno, NomeProgramaGoverno, CodigoPlanoOrcamentario, PlanoOrcamentario,CodigoSubtitulo, NomeSubtitulo, CodigoAutorEmenda, NomeAutorEmenda
 
+IF OBJECT_ID('tempdb..##temp_despesas_Convertido') IS NOT NULL
+DROP TABLE ##temp_despesas_Convertido;
 
 CREATE TABLE ##temp_despesas_Convertido(
 		AnoMesLancamento DATE,
@@ -180,8 +185,7 @@ INSERT INTO ##temp_despesas_Convertido
 SELECT
     CASE 
         WHEN AnoMesLancamento IS NULL OR AnoMesLancamento = '' THEN NULL
-        ELSE CAST(CONCAT(REPLACE(AnoMesLancamento,'/','-'), '-01') AS DATE)
-    END AS AnoMesLancamento,
+        ELSE CAST(CONCAT(REPLACE(AnoMesLancamento,'/','-'), '-01') AS DATE) END,
 
     CASE WHEN CodigoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSuperior AS INT) END,
     CAST(NomeOrgaoSuperior AS VARCHAR(150)),
@@ -502,7 +506,7 @@ WHERE rn = 1
         NomeAcao,
         ROW_NUMBER() OVER(PARTITION BY CodigoAcao ORDER BY CodigoAcao) AS rn
     FROM ##temp_despesas_Convertido
-    WHERE CodigoAcao <> '0'  -- remove valores inválidos
+    WHERE CodigoAcao <> '0'  
 )
 INSERT INTO Acao (IdAcao, NomeAcao)
 SELECT CodigoAcao, NomeAcao
@@ -575,7 +579,7 @@ BEGIN
    VALUES (4, 'Lula')
 
    INSERT INTO Mandato(IdMandato, DataInicio,DataFim,IdPresidente)
-   VALUES (1,'2015-10-01', '2016-08-31',1)
+   VALUES (1,'2015-01-01', '2016-08-31',1)
 
    INSERT INTO Mandato(IdMandato, DataInicio,DataFim,IdPresidente)
    VALUES (2,'2016-09-01', '2018-12-31',2)
@@ -596,6 +600,10 @@ BEGIN
 EXEC SP_EXTRAI_CSV_DESPESAS @CAMINHO = @CAMINHO_CSV
 EXEC SP_TRATA_CSV_DESPESAS
 EXEC SP_CARREGA_CSV_DESPESAS
-DROP TABLE ##temp_despesas_Convertido
+IF OBJECT_ID('tempdb..##temp_despesas_Convertido') IS NOT NULL
+DROP TABLE ##temp_despesas_Convertido;
+IF OBJECT_ID('tempdb..##temp_depesas') IS NOT NULL
+DROP TABLE ##temp_depesas;
+
 END
 GO
