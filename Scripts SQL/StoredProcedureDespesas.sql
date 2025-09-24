@@ -1,14 +1,14 @@
 USE ProjetoGastosGovernamentais
 GO
 
-CREATE PROCEDURE SP_EXTRAI_CSV_DESPESAS
-@CAMINHO VARCHAR(150)
+CREATE PROCEDURE SP_EXTRAI_CSV_DESPESAS --Criação da Sored Procedure que extrai os dados do csv despesas
+@CAMINHO VARCHAR(150)   --Caminho do csv que a SP irá receber para execultar o bulk insert
 AS
 BEGIN
-	IF OBJECT_ID('tempdb..##temp_depesas') IS NOT NULL
+	IF OBJECT_ID('tempdb..##temp_depesas') IS NOT NULL  --Verificação se a tabela temporaria já existe, caso exista ela é apagada
     DROP TABLE ##temp_depesas;
 
-	CREATE TABLE ##temp_depesas(
+	CREATE TABLE ##temp_depesas(                 -- Criação da tabela temporaria que irá receber todos os dados do csv despesas, com os campos todos em VARCHAR(MAX), que serão tratados e convertidos para seu tipo ideal posteriormente
 		AnoMesLancamento VARCHAR(MAX),
 		CodigoOrgaoSuperior VARCHAR(MAX),
 		NomeOrgaoSuperior VARCHAR (MAX),
@@ -58,8 +58,8 @@ BEGIN
 		ValorRestosPagarPagos VARCHAR(MAX)
 	);
 	
-    DECLARE @sql NVARCHAR(MAX);
-    SET @sql = N'
+    DECLARE @sql NVARCHAR(MAX);   --Criação de uma variavél temporaria para armazernar a instrução BULK INSERT (Isso está sendo utilizado para que essa intrução aceite o @CAMINHO)
+    SET @sql = N'				
     BULK INSERT ##temp_depesas
     FROM ''' + @CAMINHO + N'''
     WITH (
@@ -67,17 +67,17 @@ BEGIN
         ROWTERMINATOR = ''\n'',
         FIRSTROW = 2,
         CODEPAGE = ''1252''
-    );';
+    );';							--Instrução para realização do BULK INSERT
 
-    EXEC sp_executesql @sql;
+    EXEC sp_executesql @sql;     --Execução do que foi armazenado (sp_executesql é um procedimento de sistema para a execução de um comando SQL através de uma string de texto)
 
 END;
 GO
 
-CREATE PROCEDURE SP_TRATA_CSV_DESPESAS
+CREATE PROCEDURE SP_TRATA_CSV_DESPESAS      --Procedure responsável por tratar os valores extraidos
 AS
 BEGIN
-UPDATE ##temp_depesas
+UPDATE ##temp_depesas						--Como todos os dados vem com '"' no inicio e no fim, essa parte é responsável por removê-los
 SET 
 		AnoMesLancamento = REPLACE(AnoMesLancamento, '"',''),
 		CodigoOrgaoSuperior = REPLACE(CodigoOrgaoSuperior, '"',''),
@@ -129,17 +129,17 @@ SET
 
 
 
-DELETE FROM ##temp_depesas
+DELETE FROM ##temp_depesas				--Deleta os dados que contÊm o Codigo do Orgão Supeior como -1
 WHERE CodigoOrgaoSuperior = '-1'
 
 
-ALTER TABLE ##temp_depesas 
+ALTER TABLE ##temp_depesas		--Deleta tabelas que são desnecessárias
 DROP COLUMN CodigoProgramaGoverno, NomeProgramaGoverno, CodigoPlanoOrcamentario, PlanoOrcamentario,CodigoSubtitulo, NomeSubtitulo, CodigoAutorEmenda, NomeAutorEmenda
 
-IF OBJECT_ID('tempdb..##temp_despesas_Convertido') IS NOT NULL
+IF OBJECT_ID('tempdb..##temp_despesas_Convertido') IS NOT NULL		--Verificação se a tabela temporaria já existe, caso exista ela é apagada
 DROP TABLE ##temp_despesas_Convertido;
 
-CREATE TABLE ##temp_despesas_Convertido(
+CREATE TABLE ##temp_despesas_Convertido(		--Criação de uma tabela que irá receber os valores que serão convertidos para seu tipo ideal, para depois serem distribuidos para suas respectivas tabelas
 		AnoMesLancamento DATE,
 		CodigoOrgaoSuperior INT,
 		NomeOrgaoSuperior VARCHAR (150),
@@ -181,13 +181,13 @@ CREATE TABLE ##temp_despesas_Convertido(
 		ValorRestosPagarPagos DECIMAL(18,2)
 	);
 
-INSERT INTO ##temp_despesas_Convertido
+INSERT INTO ##temp_despesas_Convertido			--Casting dos dados
 SELECT
     CASE 
         WHEN AnoMesLancamento IS NULL OR AnoMesLancamento = '' THEN NULL
-        ELSE CAST(CONCAT(REPLACE(AnoMesLancamento,'/','-'), '-01') AS DATE) END,
+        ELSE CAST(CONCAT(REPLACE(AnoMesLancamento,'/','-'), '-01') AS DATE) END,				--Como a data está em formato 12/2025, é substituido o / por -, e adicionado o dia 01 no final para ocorrer a conversão
 
-    CASE WHEN CodigoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSuperior AS INT) END,
+    CASE WHEN CodigoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSuperior AS INT) END, --A partir daqui todos os dados que forem inteiros ocorrerá uma verificação que caso esteja como '' ou '-1', sejam substituido para '0', antes de sua conversão
     CAST(NomeOrgaoSuperior AS VARCHAR(150)),
 
     CASE WHEN CodigoOrgaoSubordinado IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSubordinado AS INT) END,
@@ -238,7 +238,7 @@ SELECT
     CAST(ModalidadeDespesa AS VARCHAR(MAX)),
 
     
-    CASE WHEN ValorEmpenhado IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorEmpenhado,',','.') AS DECIMAL(18,2)) END,
+    CASE WHEN ValorEmpenhado IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorEmpenhado,',','.') AS DECIMAL(18,2)) END,	--Todos os decimal a partir daqui serão verificados o mesmo caso dos inteiros, e eles serão converter a ',' para '.', que é o padrão usado no SQL SERVER
     CASE WHEN ValorLiquidado IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorLiquidado,',','.') AS DECIMAL(18,2)) END,
     CASE WHEN ValorPago IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorPago,',','.') AS DECIMAL(18,2)) END,
     CASE WHEN ValorRestosPagarInscritos IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorRestosPagarInscritos,',','.') AS DECIMAL(18,2)) END,
@@ -251,41 +251,41 @@ DROP TABLE ##temp_depesas
 END
 GO
 
-CREATE PROCEDURE SP_CARREGA_CSV_DESPESAS
+CREATE PROCEDURE SP_CARREGA_CSV_DESPESAS		--Stored Procedure responsável por carregar os dados tratados para sua respectiva tabela
 AS 
 BEGIN
-WITH CTE AS (
+WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoOrgaoSuperior,
         NomeOrgaoSuperior,
-        ROW_NUMBER() OVER(PARTITION BY CodigoOrgaoSuperior ORDER BY CodigoOrgaoSuperior) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoOrgaoSuperior ORDER BY CodigoOrgaoSuperior) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoOrgaoSuperior <> 0
+    WHERE CodigoOrgaoSuperior <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)
+INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)				--Preenchimento da tabela OrgaoSuperior
 SELECT CodigoOrgaoSuperior, NomeOrgaoSuperior
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificando se o valor já existe na tabela principal
       SELECT 1 FROM OrgaoSuperior o
       WHERE o.IdOrgaoSuperior = CTE.CodigoOrgaoSuperior
   );
 
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoOrgaoSubordinado,
         NomeOrgaoSubordinado,
         CodigoOrgaoSuperior,
-        ROW_NUMBER() OVER(PARTITION BY CodigoOrgaoSubordinado ORDER BY CodigoOrgaoSubordinado) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoOrgaoSubordinado ORDER BY CodigoOrgaoSubordinado) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoOrgaoSubordinado <> 0 AND CodigoOrgaoSuperior <> 0
+    WHERE CodigoOrgaoSubordinado <> 0 AND CodigoOrgaoSuperior <> 0		--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO OrgaoSubordinado (IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior)
+INSERT INTO OrgaoSubordinado (IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior)  --Preenchimento da tabela OrgaoSubordinado
 SELECT CodigoOrgaoSubordinado, NomeOrgaoSubordinado, CodigoOrgaoSuperior
 FROM CTE
-WHERE rn = 1
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
   AND NOT EXISTS (
       SELECT 1 FROM OrgaoSubordinado o
       WHERE o.IdOrgaoSubordinado = CTE.CodigoOrgaoSubordinado
@@ -293,38 +293,38 @@ WHERE rn = 1
 
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoGestao,
         NomeGestao,
-        ROW_NUMBER() OVER(PARTITION BY CodigoGestao ORDER BY CodigoGestao) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoGestao ORDER BY CodigoGestao) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoGestao <> 0
+    WHERE CodigoGestao <> 0															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO Gestao (IdGestao, NomeGestao)
+INSERT INTO Gestao (IdGestao, NomeGestao)  --Preenchimento da tabela Gestao
 SELECT CodigoGestao, NomeGestao
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM Gestao g
       WHERE g.IdGestao = CTE.CodigoGestao
   );
 
-    WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoUnidadeGestora,
         NomeUnidadeGestora,
         CodigoOrgaoSuperior,
         CodigoGestao,
-        ROW_NUMBER() OVER(PARTITION BY CodigoUnidadeGestora ORDER BY CodigoUnidadeGestora) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoUnidadeGestora ORDER BY CodigoUnidadeGestora) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoUnidadeGestora <> 0 AND CodigoOrgaoSuperior <> 0 AND CodigoGestao <> 0
+    WHERE CodigoUnidadeGestora <> 0 AND CodigoOrgaoSuperior <> 0 AND CodigoGestao <> 0			--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO UnidadeGestora (IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior, IdGestao)
+INSERT INTO UnidadeGestora (IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior, IdGestao)  --Preenchimento da tabela UnidadeGestora
 SELECT CodigoUnidadeGestora, NomeUnidadeGestora, CodigoOrgaoSuperior, CodigoGestao
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM UnidadeGestora u
       WHERE u.IdUnidadeGestora = CTE.CodigoUnidadeGestora
        -- AND u.IdOrgaoSuperior = CTE.CodigoOrgaoSuperior
@@ -333,192 +333,192 @@ WHERE rn = 1
 
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoGrupoDespesa,
         NomeGrupoDespesa,
-        ROW_NUMBER() OVER(PARTITION BY CodigoGrupoDespesa ORDER BY CodigoGrupoDespesa) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoGrupoDespesa ORDER BY CodigoGrupoDespesa) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoGrupoDespesa <> 0
+    WHERE CodigoGrupoDespesa <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO GrupoDespesa (IdGrupoDespesa, NomeGrupoDespesa)
+INSERT INTO GrupoDespesa (IdGrupoDespesa, NomeGrupoDespesa)  --Preenchimento da tabela GrupoDespesa
 SELECT CodigoGrupoDespesa, NomeGrupoDespesa
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM GrupoDespesa g
       WHERE g.IdGrupoDespesa = CTE.CodigoGrupoDespesa
   );
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoCategoriaEconomica,
         NomeCategoriaEconomica,
         CodigoGrupoDespesa,
-        ROW_NUMBER() OVER(PARTITION BY CodigoCategoriaEconomica ORDER BY CodigoCategoriaEconomica) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoCategoriaEconomica ORDER BY CodigoCategoriaEconomica) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoCategoriaEconomica <> 0 AND CodigoGrupoDespesa <> 0
+    WHERE CodigoCategoriaEconomica <> 0 AND CodigoGrupoDespesa <> 0										--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO CategoriaEconomica (IdCategoriaEconomica, NomeCategoriaEconomica, IdGrupoDespesa)
+INSERT INTO CategoriaEconomica (IdCategoriaEconomica, NomeCategoriaEconomica, IdGrupoDespesa)  --Preenchimento da tabela CategoriaEconomica
 SELECT CodigoCategoriaEconomica, NomeCategoriaEconomica, CodigoGrupoDespesa
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM CategoriaEconomica c
       WHERE c.IdCategoriaEconomica = CTE.CodigoCategoriaEconomica
   );
 
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoModalidadeDespesa,
         ModalidadeDespesa,
         CodigoGrupoDespesa,
-        ROW_NUMBER() OVER(PARTITION BY CodigoModalidadeDespesa ORDER BY CodigoModalidadeDespesa) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoModalidadeDespesa ORDER BY CodigoModalidadeDespesa) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoModalidadeDespesa <> 0 AND CodigoGrupoDespesa <> 0
+    WHERE CodigoModalidadeDespesa <> 0 AND CodigoGrupoDespesa <> 0										--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO ModalidadeDespesa (IdModalidadeDespesa, NomeModalidadeDespesa, IdGrupoDespesa)
+INSERT INTO ModalidadeDespesa (IdModalidadeDespesa, NomeModalidadeDespesa, IdGrupoDespesa)  --Preenchimento da tabela ModalidadeDespesa
 SELECT CodigoModalidadeDespesa, ModalidadeDespesa, CodigoGrupoDespesa
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM ModalidadeDespesa m
       WHERE m.IdModalidadeDespesa = CTE.CodigoModalidadeDespesa
   );
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoElementoDespesa,
         NomeElementoDespesa,
         CodigoGrupoDespesa,
-        ROW_NUMBER() OVER(PARTITION BY CodigoElementoDespesa ORDER BY CodigoElementoDespesa) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoElementoDespesa ORDER BY CodigoElementoDespesa) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoElementoDespesa <> 0 AND CodigoGrupoDespesa <> 0
+    WHERE CodigoElementoDespesa <> 0 AND CodigoGrupoDespesa <> 0									--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO ElementoDespesa (IdElementoDespesa, NomeElementoDespesa, IdGrupoDespesa)
+INSERT INTO ElementoDespesa (IdElementoDespesa, NomeElementoDespesa, IdGrupoDespesa)  --Preenchimento da tabela ElementoDespesa
 SELECT CodigoElementoDespesa, NomeElementoDespesa, CodigoGrupoDespesa
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM ElementoDespesa e
       WHERE e.IdElementoDespesa = CTE.CodigoElementoDespesa
   );
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoLocalizador,
         NomeLocalizador,
         SiglaLocalizador,
         DescricaoComplementarLocalizador,
-        ROW_NUMBER() OVER(PARTITION BY CodigoLocalizador ORDER BY CodigoLocalizador) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoLocalizador ORDER BY CodigoLocalizador) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoLocalizador <> 0
+    WHERE CodigoLocalizador <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO Localizador (IdLocalizador, NomeLocalizador, SiglaLocalizador, DescricaoComplementarLocalizador)
+INSERT INTO Localizador (IdLocalizador, NomeLocalizador, SiglaLocalizador, DescricaoComplementarLocalizador)  --Preenchimento da tabela Localizador
 SELECT CodigoLocalizador, NomeLocalizador, SiglaLocalizador, DescricaoComplementarLocalizador
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM Localizador l
       WHERE l.IdLocalizador = CTE.CodigoLocalizador
   );
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoUnidadeOrcamentaria,
         NomeUnidadeOrcamentaria,
-        ROW_NUMBER() OVER(PARTITION BY CodigoUnidadeOrcamentaria ORDER BY CodigoUnidadeOrcamentaria) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoUnidadeOrcamentaria ORDER BY CodigoUnidadeOrcamentaria) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoUnidadeOrcamentaria <> 0
+    WHERE CodigoUnidadeOrcamentaria <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO UnidadeOrcamentaria (IdUnidadeOrcamentaria, NomeUnidadeOrcamentaria)
+INSERT INTO UnidadeOrcamentaria (IdUnidadeOrcamentaria, NomeUnidadeOrcamentaria)  --Preenchimento da tabela UnidadeOrcamentaria
 SELECT CodigoUnidadeOrcamentaria, NomeUnidadeOrcamentaria
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM UnidadeOrcamentaria u
       WHERE u.IdUnidadeOrcamentaria = CTE.CodigoUnidadeOrcamentaria
   );
 
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoProgramaOrcamentario,
         NomeProgramaOrcamentario,
         CodigoUnidadeOrcamentaria,
-        ROW_NUMBER() OVER(PARTITION BY CodigoProgramaOrcamentario ORDER BY CodigoProgramaOrcamentario) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoProgramaOrcamentario ORDER BY CodigoProgramaOrcamentario) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoProgramaOrcamentario <> 0 AND CodigoUnidadeOrcamentaria <> 0
+    WHERE CodigoProgramaOrcamentario <> 0 AND CodigoUnidadeOrcamentaria <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO ProgramaOrcamentario (IdProgramaOrcamentario, NomeProgramaOrcamentario, IdUnidadeOrcamentaria)
+INSERT INTO ProgramaOrcamentario (IdProgramaOrcamentario, NomeProgramaOrcamentario, IdUnidadeOrcamentaria)  --Preenchimento da tabela ProgramaOrcamentario
 SELECT CodigoProgramaOrcamentario, NomeProgramaOrcamentario, CodigoUnidadeOrcamentaria
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM ProgramaOrcamentario p
       WHERE p.IdProgramaOrcamentario = CTE.CodigoProgramaOrcamentario
   );
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoFuncao,
         NomeFuncao,
-        ROW_NUMBER() OVER(PARTITION BY CodigoFuncao ORDER BY CodigoFuncao) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoFuncao ORDER BY CodigoFuncao) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoFuncao <> 0
+    WHERE CodigoFuncao <> 0														--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO Funcao (IdFuncao, NomeFuncao)
+INSERT INTO Funcao (IdFuncao, NomeFuncao)  --Preenchimento da tabela Funcao
 SELECT CodigoFuncao, NomeFuncao
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM Funcao f
       WHERE f.IdFuncao = CTE.CodigoFuncao
   );
 
-  WITH CTE AS (
+  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoSubfuncao,
         NomeSubfuncao,
         CodigoFuncao,
-        ROW_NUMBER() OVER(PARTITION BY CodigoSubfuncao ORDER BY CodigoSubfuncao) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoSubfuncao ORDER BY CodigoSubfuncao) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoSubfuncao <> 0 AND CodigoFuncao <> 0
+    WHERE CodigoSubfuncao <> 0 AND CodigoFuncao <> 0									--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO SubFuncao (IdSubFuncao, NomeSubFuncao, IdFuncao)
+INSERT INTO SubFuncao (IdSubFuncao, NomeSubFuncao, IdFuncao)  --Preenchimento da tabela SubFuncao
 SELECT CodigoSubfuncao, NomeSubfuncao, CodigoFuncao
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 FROM SubFuncao s
       WHERE s.IdSubFuncao = CTE.CodigoSubfuncao
   );
 
-  ;WITH CTE AS (
+  ;WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
     SELECT 
         CodigoAcao,
         NomeAcao,
-        ROW_NUMBER() OVER(PARTITION BY CodigoAcao ORDER BY CodigoAcao) AS rn
+        ROW_NUMBER() OVER(PARTITION BY CodigoAcao ORDER BY CodigoAcao) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
     FROM ##temp_despesas_Convertido
-    WHERE CodigoAcao <> '0'  
+    WHERE CodigoAcao <> '0'  														--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 )
-INSERT INTO Acao (IdAcao, NomeAcao)
+INSERT INTO Acao (IdAcao, NomeAcao)  --Preenchimento da tabela Acao
 SELECT CodigoAcao, NomeAcao
 FROM CTE
-WHERE rn = 1
-  AND NOT EXISTS (
+WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+  AND NOT EXISTS (								--Verificadno se o valor já existe na tabela principal
       SELECT 1 
       FROM Acao a
       WHERE a.IdAcao = CTE.CodigoAcao
   );
 
-INSERT INTO Despesas (
+INSERT INTO Despesas (				--Preenchimento da tabela despesas
     DataLancamento,
     UF,
     Municipio,
@@ -549,21 +549,21 @@ SELECT
     t.CodigoElementoDespesa,
     t.CodigoOrgaoSuperior,
     t.CodigoCategoriaEconomica,
-    NULLIF(t.CodigoGestao, 0),
-    t.CodigoProgramaOrcamentario,
+    NULLIF(t.CodigoGestao, 0),		--caso esteja como '0', coloca NULL
+    t.CodigoProgramaOrcamentario,   --caso esteja como '0', coloca NULL
     NULLIF(t.CodigoLocalizador,0),
     m.IdMandato, 
     t.CodigoAcao,
     t.CodigoFuncao
 FROM ##temp_despesas_Convertido t
-JOIN Mandato m
+JOIN Mandato m						--JOIN para saber qual o mandato daquela data
     ON t.AnoMesLancamento >= m.DataInicio
    AND (t.AnoMesLancamento <= m.DataFim OR m.DataFim IS NULL);
 END
 GO
 
 
-CREATE PROCEDURE SP_CARREGA_PRESIDENTE
+CREATE PROCEDURE SP_CARREGA_PRESIDENTE		--Stored Procedure que preenche a tabela presisdente e mandato
 AS
 BEGIN
    INSERT INTO Presidente(IdPresidente, NomePresidente)
@@ -593,7 +593,7 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE SP_ETL_DESPESAS
+CREATE PROCEDURE SP_ETL_DESPESAS			--Stored Procedure que executa as SP de ETL despesa
 @CAMINHO_CSV VARCHAR(150)
 AS
 BEGIN

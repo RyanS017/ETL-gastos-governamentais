@@ -1,14 +1,14 @@
 USE ProjetoGastosGovernamentais
 GO
 
-CREATE PROCEDURE SP_EXTRAI_VIAGEM
-@CAMINHO VARCHAR(150)
+CREATE PROCEDURE SP_EXTRAI_VIAGEM --Criação da Sored Procedure que extrai os dados do csv despesas
+@CAMINHO VARCHAR(150)   --Caminho do csv que a SP irá receber para execultar o bulk insert
 AS
 BEGIN
-	IF OBJECT_ID('tempdb..##temp_viagem_csv_tb') IS NOT NULL
+	IF OBJECT_ID('tempdb..##temp_viagem_csv_tb') IS NOT NULL  --Verificação se a tabela temporaria já existe, caso exista ela é apagada
     DROP TABLE ##temp_viagem_csv_tb;
 
-	CREATE TABLE ##temp_viagem_csv_tb (
+	CREATE TABLE ##temp_viagem_csv_tb (                 -- Criação da tabela temporaria que irá receber todos os dados do csv viagem, com os campos todos em VARCHAR(MAX), que serão tratados e convertidos para seu tipo ideal posteriormente
 	    IdentificadorDoprocessoDeViagem VARCHAR(MAX),
 	    NumeroDaProposta_PCDP VARCHAR(MAX),
 	    Situacao VARCHAR(MAX),
@@ -33,7 +33,7 @@ BEGIN
 	    ValorOutrosGastos VARCHAR(MAX)
 	);
 	
-DECLARE @sql NVARCHAR(MAX);
+DECLARE @sql NVARCHAR(MAX);   --Criação de uma variavél temporaria para armazernar a instrução BULK INSERT (Isso está sendo utilizado para que essa intrução aceite o @CAMINHO)
     SET @sql = N'
     BULK INSERT ##temp_viagem_csv_tb
     FROM ''' + @CAMINHO + N'''
@@ -42,22 +42,22 @@ DECLARE @sql NVARCHAR(MAX);
         ROWTERMINATOR = ''\n'',
         FIRSTROW = 2,
         CODEPAGE = ''1252''
-    );';
+    );';							--Instrução para realização do BULK INSERT
 
-    EXEC sp_executesql @sql;
+    EXEC sp_executesql @sql;     --Execução do que foi armazenado (sp_executesql é um procedimento de sistema para a execução de um comando SQL através de uma string de texto)
 
 END;
 GO
 
 
-CREATE PROCEDURE SP_TRATA_VIAGEM
+CREATE PROCEDURE SP_TRATA_VIAGEM     --Procedure responsável por tratar os valores extraidos
 AS
 BEGIN
 
-	ALTER TABLE ##temp_viagem_csv_tb
+	ALTER TABLE ##temp_viagem_csv_tb		--Deleta tabelas que são desnecessárias
 	DROP COLUMN NumeroDaProposta_PCDP, Situacao, ViagemUrgente, JustificativaUrgenciaViagem, Nome, Funcao, DescricaoFuncao, CPFviajante, Cargo
 	
-	UPDATE ##temp_viagem_csv_tb
+	UPDATE ##temp_viagem_csv_tb						--Como todos os dados vem com '"' no inicio e no fim, essa parte é responsável por removê-los
 	SET 
 	    IdentificadorDoprocessoDeViagem = REPLACE(IdentificadorDoprocessoDeViagem, '"', ''),
 	    CodigoDoOrgaoSuperior           = REPLACE(CodigoDoOrgaoSuperior, '"', ''),
@@ -73,7 +73,7 @@ BEGIN
 	    ValorDevolucao                  = REPLACE(ValorDevolucao, '"', ''),
 	    ValorOutrosGastos               = REPLACE(ValorOutrosGastos, '"', '');
 	
-	DELETE
+	DELETE																		--Alguns de valor estavam vindo com informações de outras colunas, então aqui nós identificamos eles e apagamos
 	FROM ##temp_viagem_csv_tb
 	WHERE TRY_CAST(REPLACE(ValorDiarias, ',', '.') AS DECIMAL(18,2)) IS NULL 
 	or TRY_CAST(REPLACE(ValorPassagens, ',', '.') AS DECIMAL(18,2)) IS NULL
@@ -83,13 +83,13 @@ BEGIN
 	AND ValorOutrosGastos NOT IN ('', '-1')
 	
 	
-	DELETE 
+	DELETE												--Deleta dados que não possuem id
 	FROM ##temp_viagem_csv_tb
 	WHERE IdentificadorDoprocessoDeViagem IN ('', '-1')
 
-	IF OBJECT_ID('tempdb..##temp_viajens_convertido_tb') IS NOT NULL DROP TABLE ##temp_viajens_convertido_tb;
+	IF OBJECT_ID('tempdb..##temp_viajens_convertido_tb') IS NOT NULL DROP TABLE ##temp_viajens_convertido_tb;		--Verificação se a tabela temporaria já existe, caso exista ela é apagada
 
-	CREATE TABLE ##temp_viajens_convertido_tb (
+	CREATE TABLE ##temp_viajens_convertido_tb (		--Criação de uma tabela que irá receber os valores que serão convertidos para seu tipo ideal, para depois serem distribuidos para suas respectivas tabelas
 	    IdentificadorDoprocessoDeViagem INT,
 	    CodigoDoOrgaoSuperior INT,
 	    NomeDoOrgaoSuperior VARCHAR(150),
@@ -107,10 +107,10 @@ BEGIN
 	
 	
 	
-	INSERT INTO ##temp_viajens_convertido_tb
+	INSERT INTO ##temp_viajens_convertido_tb			--Casting dos dados
 	SELECT
 		CAST(IdentificadorDoprocessoDeViagem AS INT),
-		CASE WHEN CodigoDoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoDoOrgaoSuperior AS INT) END, 
+		CASE WHEN CodigoDoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoDoOrgaoSuperior AS INT) END,  --A partir daqui todos os dados que forem inteiros ocorrerá uma verificação que caso esteja como '' ou '-1', sejam substituido para '0', antes de sua conversão
 	    CAST(NomeDoOrgaoSuperior AS VARCHAR(150)),
 		CASE WHEN CodigoOrgaoSolicitante IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSolicitante AS INT) END,
 		CAST(NomeOrgaoSolicitante AS VARCHAR(150)),
@@ -122,7 +122,7 @@ BEGIN
 	    ELSE CAST(REPLACE(Periodo_DataDeFim,'/','-') AS DATE) END,
 		CAST(Destinos AS VARCHAR(150)),
 		CAST(Motivo AS VARCHAR(150)),
-		CASE WHEN ValorDiarias IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorDiarias,',','.') AS DECIMAL(18,2)) END,
+		CASE WHEN ValorDiarias IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorDiarias,',','.') AS DECIMAL(18,2)) END,	--Todos os decimal a partir daqui serão verificados o mesmo caso dos inteiros, e eles serão converter a ',' para '.', que é o padrão usado no SQL SERVER
 		CASE WHEN ValorPassagens IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorPassagens,',','.') AS DECIMAL(18,2)) END,
 		CASE WHEN ValorDevolucao IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorDevolucao,',','.') AS DECIMAL(18,2)) END,
 		CASE WHEN ValorOutrosGastos IN ('','-1') THEN 0 ELSE CAST(REPLACE(ValorOutrosGastos,',','.') AS DECIMAL(18,2)) END
@@ -131,45 +131,45 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE SP_CARREGA_VIAGEM
+CREATE PROCEDURE SP_CARREGA_VIAGEM		--Stored Procedure responsável por carregar os dados tratados para sua respectiva tabela
 AS
 BEGIN
-	WITH CTE AS (
+	WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
 	    SELECT 
 	        CodigoDoOrgaoSuperior,
 	        NomeDoOrgaoSuperior,
-	        ROW_NUMBER() OVER(PARTITION BY CodigoDoOrgaoSuperior ORDER BY CodigoDoOrgaoSuperior) AS rn
+	        ROW_NUMBER() OVER(PARTITION BY CodigoDoOrgaoSuperior ORDER BY CodigoDoOrgaoSuperior) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
 	    FROM ##temp_viajens_convertido_tb
-	    WHERE CodigoDoOrgaoSuperior <> 0
+	    WHERE CodigoDoOrgaoSuperior <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 	)
-	INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)
+	INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)  --Preenchimento da tabela OrgaoSuperior
 	SELECT CodigoDoOrgaoSuperior, NomeDoOrgaoSuperior
 	FROM CTE
-	WHERE rn = 1
-	  AND NOT EXISTS (
+	WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+	  AND NOT EXISTS (								--Verificando se o valor já existe na tabela principal
 	      SELECT 1 FROM OrgaoSuperior o
 	      WHERE o.IdOrgaoSuperior = CTE.CodigoDoOrgaoSuperior
 	  );
 	
 	
-	WITH CTE AS (
+	WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
 		SELECT
 			CodigoOrgaoSolicitante,
 			NomeOrgaoSolicitante,
-			ROW_NUMBER() OVER (PARTITION BY CodigoOrgaoSolicitante ORDER BY CodigoOrgaoSolicitante) AS rn
+			ROW_NUMBER() OVER (PARTITION BY CodigoOrgaoSolicitante ORDER BY CodigoOrgaoSolicitante) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
 		FROM ##temp_viajens_convertido_tb
-		WHERE CodigoOrgaoSolicitante <> 0
+		WHERE CodigoOrgaoSolicitante <> 0																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 	)
-	INSERT INTO OrgaoSolicitante (IdOrgaoSolicitante, NomeOrgaoSolicitante)
+	INSERT INTO OrgaoSolicitante (IdOrgaoSolicitante, NomeOrgaoSolicitante)  --Preenchimento da tabela OrgaoSolicitante
 	SELECT CodigoOrgaoSolicitante, NomeOrgaoSolicitante
 	FROM CTE
-	WHERE rn = 1
-		AND NOT EXISTS (
+	WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+		AND NOT EXISTS (								--Verificando se o valor já existe na tabela principal
 			SELECT 1 FROM OrgaoSolicitante o
 			WHERE o.IdOrgaoSolicitante = CTE.CodigoOrgaoSolicitante
 		);
 	
-	INSERT INTO Viagem (
+	INSERT INTO Viagem (		--Preenchimento da tabela de Viagem
 		IdViagem,
 		PeriodoFim,
 		PeriodoInicio,
@@ -186,14 +186,14 @@ BEGIN
 		tp.Destinos,
 		tp.Motivo,
 		tp.ValorDiarias + tp.ValorPassagens + tp.ValorOutrosGastos,
-		NULLIF(tp.CodigoDoOrgaoSuperior, 0),
-		NULLIF(tp.CodigoOrgaoSolicitante, 0)
+		NULLIF(tp.CodigoDoOrgaoSuperior, 0),		--caso esteja como '0', coloca NULL
+		NULLIF(tp.CodigoOrgaoSolicitante, 0)		--caso esteja como '0', coloca NULL
 	
 		FROM ##temp_viajens_convertido_tb tp
 END;
 GO
 
-CREATE PROCEDURE SP_ETL_VIAGEM
+CREATE PROCEDURE SP_ETL_VIAGEM			--Stored Procedure que executa as SP de ETL Viagem
 @CAMINHO_CSV VARCHAR(150)
 AS
 BEGIN
@@ -207,14 +207,14 @@ DROP TABLE ##temp_viagem_csv_tb;
 END;
 GO
 
-CREATE PROCEDURE SP_EXTRAI_PASSAGEM
+CREATE PROCEDURE SP_EXTRAI_PASSAGEM			 --Criação da Sored Procedure que extrai os dados do csv passagem
 @CAMINHO VARCHAR(150)
 AS
 BEGIN
-	IF OBJECT_ID('tempdb..##tb_passagem_csv_tb') IS NOT NULL
+	IF OBJECT_ID('tempdb..##tb_passagem_csv_tb') IS NOT NULL  --Verificação se a tabela temporaria já existe, caso exista ela é apagada
 	DROP TABLE ##tb_passagem_csv_tb
 
-	CREATE TABLE ##tb_passagem_csv_tb(
+	CREATE TABLE ##tb_passagem_csv_tb(                 -- Criação da tabela temporaria que irá receber todos os dados do csv despesas, com os campos todos em VARCHAR(MAX), que serão tratados e convertidos para seu tipo ideal posteriormente
 	
 		IdentificadorDoProcessoDeViagem VARCHAR(MAX),
 		NúmeroDaPropostaPCDP VARCHAR(MAX),
@@ -237,7 +237,7 @@ BEGIN
 		HoradaEmissão VARCHAR(MAX),
 	);
 	
-	DECLARE @sql NVARCHAR(MAX);
+	DECLARE @sql NVARCHAR(MAX);   --Criação de uma variavél temporaria para armazernar a instrução BULK INSERT (Isso está sendo utilizado para que essa intrução aceite o @CAMINHO)
 	    SET @sql = N'
 	    BULK INSERT ##tb_passagem_csv_tb
 	    FROM ''' + @CAMINHO + N'''
@@ -246,20 +246,20 @@ BEGIN
 	        ROWTERMINATOR = ''\n'',
 	        FIRSTROW = 2,
 	        CODEPAGE = ''1252''
-	    );';
+	    );';							--Instrução para realização do BULK INSERT
 
-    EXEC sp_executesql @sql;
+    EXEC sp_executesql @sql;     --Execução do que foi armazenado (sp_executesql é um procedimento de sistema para a execução de um comando SQL através de uma string de texto)
 END
 GO
 
-CREATE PROCEDURE SP_TRATA_PASSAGEM
+CREATE PROCEDURE SP_TRATA_PASSAGEM      --Procedure responsável por tratar os valores extraidos
 AS
 BEGIN
-	ALTER TABLE ##tb_passagem_csv_tb
+	ALTER TABLE ##tb_passagem_csv_tb		--Deleta tabelas que são desnecessárias
 	DROP COLUMN NúmeroDaPropostaPCDP, CidadeOrigemIda, CidadeDestinoIda, PaísOrigemVolta, UFOrigemVolta,
 				CidadeOrigemVolta, PaisDestinoVolta, UFDestinoVolta, CidadeDestinoVolta, DatadaEmissão, HoradaEmissão
 
-	UPDATE ##tb_passagem_csv_tb
+	UPDATE ##tb_passagem_csv_tb						--Como todos os dados vem com '"' no inicio e no fim, essa parte é responsável por removê-los
 		SET 
 	    IdentificadorDoProcessoDeViagem = REPLACE(IdentificadorDoprocessoDeViagem, '"', ''),
 	    MeioDeTransporte				= REPLACE(MeioDeTransporte, '"', ''),
@@ -270,10 +270,10 @@ BEGIN
 		ValorDaPassagem					= REPLACE(ValorDaPassagem, '"', ''),
 		TaxaDeServiço					= REPLACE(TaxaDeServiço, '"', '');
 
-	IF OBJECT_ID('tempdb..##temp_passagem_convertido_tb') IS NOT NULL
+	IF OBJECT_ID('tempdb..##temp_passagem_convertido_tb') IS NOT NULL		--Verificação se a tabela temporaria já existe, caso exista ela é apagada
 	DROP TABLE ##temp_passagem_convertido_tb
 
-	CREATE TABLE ##temp_passagem_convertido_tb (
+	CREATE TABLE ##temp_passagem_convertido_tb (		--Criação de uma tabela que irá receber os valores que serão convertidos para seu tipo ideal, para depois serem distribuidos para suas respectivas tabelas
 		    IdentificadorDoprocessoDeViagem INT,
 		    MeioDeTransporte VARCHAR(255),
 		    Origem VARCHAR(150),
@@ -282,22 +282,22 @@ BEGIN
 		    TaxaServico DECIMAL(18,2),
 		   );
 	
-	INSERT INTO ##temp_passagem_convertido_tb 
+	INSERT INTO ##temp_passagem_convertido_tb 			--Casting dos dados
 	SELECT
 		CAST(IdentificadorDoprocessoDeViagem AS INT),
 		CAST(MeioDeTransporte AS VARCHAR(255)),
 		CAST(CONCAT(PaísOrigemIda, '-', UFOrigemIda) AS VARCHAR(255)),
 		CAST(CONCAT(PaísDestinoIda, '-', UFDestinoIda) AS VARCHAR(255)),
-		CASE WHEN ValorDaPassagem IN ('', '-1') THEN 0 ELSE CAST(REPLACE(ValorDaPassagem, ',', '.') AS DECIMAL(18,2)) END,
+		CASE WHEN ValorDaPassagem IN ('', '-1') THEN 0 ELSE CAST(REPLACE(ValorDaPassagem, ',', '.') AS DECIMAL(18,2)) END,	--Todos os decimal a partir daqui serão verificados para valores como '' e '-1', e eles serão converter a ',' para '.', que é o padrão usado no SQL SERVER
 		CASE WHEN TaxaDeServiço IN ('', '-1') THEN 0 ELSE CAST(REPLACE(TaxaDeServiço, ',', '.') AS DECIMAL(18,2)) END
 	FROM ##tb_passagem_csv_tb
 END
 GO
 
-CREATE PROCEDURE SP_CARREGA_PASSAGEM
+CREATE PROCEDURE SP_CARREGA_PASSAGEM		--Stored Procedure responsável por carregar os dados tratados para sua respectiva tabela
 AS
 BEGIN
-	INSERT INTO Passagem (
+	INSERT INTO Passagem (				--Preenchimento da tabela despesas
 		MeioTransporte,
 		Origem,
 		Destino,
@@ -313,12 +313,12 @@ BEGIN
 		TaxaServico,
 		IdentificadorDoprocessoDeViagem
 	FROM ##temp_passagem_convertido_tb tp
-	INNER JOIN Viagem v
+	INNER JOIN Viagem v			--JOIIN para garantir que todas as passagens tenham um Idviagem 
 	on tp.IdentificadorDoprocessoDeViagem = v.IdViagem
 END
 GO
 
-CREATE PROCEDURE SP_ETL_PASSAGEM
+CREATE PROCEDURE SP_ETL_PASSAGEM			--Stored Procedure que executa as SP de ETL passagem
 @CAMINHO_CSV VARCHAR(150)
 AS
 BEGIN
@@ -332,13 +332,13 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE SP_EXTRAI_PAGAMENTO
-@CAMINHO VARCHAR(150)
+CREATE PROCEDURE SP_EXTRAI_PAGAMENTO --Criação da Sored Procedure que extrai os dados do csv pagamento
+@CAMINHO VARCHAR(150)   --Caminho do csv que a SP irá receber para execultar o bulk insert
 AS
 BEGIN
-	IF OBJECT_ID('tempdb..##temp_pagamneto_csv_tb') IS NOT NULL
+	IF OBJECT_ID('tempdb..##temp_pagamneto_csv_tb') IS NOT NULL  --Verificação se a tabela temporaria já existe, caso exista ela é apagada
 	DROP TABLE ##temp_pagamneto_csv_tb
-	CREATE TABLE ##temp_pagamneto_csv_tb (
+	CREATE TABLE ##temp_pagamneto_csv_tb (                 -- Criação da tabela temporaria que irá receber todos os dados do csv despesas, com os campos todos em VARCHAR(MAX), que serão tratados e convertidos para seu tipo ideal posteriormente
 		IdentificadorDoProcessoDeViagem VARCHAR(MAX),
 		NumeroDaPropostaPCDP VARCHAR(MAX),
 		CodigodoOrgaoSuperior VARCHAR(MAX),
@@ -351,7 +351,7 @@ BEGIN
 		Valor VARCHAR(MAX)
 	)
 	
-		DECLARE @sql NVARCHAR(MAX);
+		DECLARE @sql NVARCHAR(MAX);   --Criação de uma variavél temporaria para armazernar a instrução BULK INSERT (Isso está sendo utilizado para que essa intrução aceite o @CAMINHO)
 		    SET @sql = N'
 		    BULK INSERT ##temp_pagamneto_csv_tb
 		    FROM ''' + @CAMINHO + N'''
@@ -360,19 +360,19 @@ BEGIN
 		        ROWTERMINATOR = ''\n'',
 		        FIRSTROW = 2,
 		        CODEPAGE = ''1252''
-		    );';
+		    );';							--Instrução para realização do BULK INSERT
 	
-	    EXEC sp_executesql @sql;
+	    EXEC sp_executesql @sql;     --Execução do que foi armazenado (sp_executesql é um procedimento de sistema para a execução de um comando SQL através de uma string de texto)
 END;
 GO
 
-CREATE PROCEDURE SP_TRATA_PAGAMENTO
+CREATE PROCEDURE SP_TRATA_PAGAMENTO      --Procedure responsável por tratar os valores extraidos
 AS
 BEGIN
-	ALTER TABLE ##temp_pagamneto_csv_tb
+	ALTER TABLE ##temp_pagamneto_csv_tb		--Deleta tabelas que são desnecessárias
 	DROP COLUMN NumeroDaPropostaPCDP
 
-	UPDATE ##temp_pagamneto_csv_tb
+	UPDATE ##temp_pagamneto_csv_tb						--Como todos os dados vem com '"' no inicio e no fim, essa parte é responsável por removê-los
 		SET 
 	    IdentificadorDoProcessoDeViagem = REPLACE(IdentificadorDoProcessoDeViagem, '"', ''),
 		CodigodoOrgaoSuperior			= REPLACE(CodigodoOrgaoSuperior, '"', ''),
@@ -384,10 +384,10 @@ BEGIN
 		TipoDePagamento					= REPLACE(TipoDePagamento, '"', ''),
 		Valor							= REPLACE(Valor, '"', '')
 
-	IF OBJECT_ID('tempdb..##temp_pagamento_convertido_tb') IS NOT NULL
+	IF OBJECT_ID('tempdb..##temp_pagamento_convertido_tb') IS NOT NULL		--Verificação se a tabela temporaria já existe, caso exista ela é apagada
 	DROP TABLE ##temp_pagamento_convertido_tb
 
-	CREATE TABLE ##temp_pagamento_convertido_tb (
+	CREATE TABLE ##temp_pagamento_convertido_tb (		--Criação de uma tabela que irá receber os valores que serão convertidos para seu tipo ideal, para depois serem distribuidos para suas respectivas tabelas
 		IdentificadorDoProcessoDeViagem INT,
 		CodigodoOrgaoSuperior INT,
 		NomeDoOrgaoSuperior VARCHAR(150),
@@ -399,85 +399,85 @@ BEGIN
 		Valor DECIMAL(18,2)
 		   );
 
-	INSERT INTO ##temp_pagamento_convertido_tb
+	INSERT INTO ##temp_pagamento_convertido_tb			--Casting dos dados
 	SELECT
 		CAST(IdentificadorDoprocessoDeViagem AS INT),
-		CASE WHEN CodigodoOrgaoSuperior IN ('', '-11', '-1', '-3') THEN 0 ELSE CAST(CodigodoOrgaoSuperior AS INT) END,
+		CASE WHEN CodigodoOrgaoSuperior IN ('', '-11', '-1', '-3') THEN 0 ELSE CAST(CodigodoOrgaoSuperior AS INT) END, --A partir daqui todos os dados que forem inteiros ocorrerá uma verificação que caso esteja como '', '-3' ou '-1', sejam substituido para '0', antes de sua conversão
 		CAST(NomeDoOrgaoSuperior AS VARCHAR(150)),
 		CASE WHEN CodigoDoOrgaoPagador IN ('', '-11', '-3', '-1') THEN 0 ELSE CAST(CodigoDoOrgaoPagador AS INT) END,
 		CAST(NomeDoOrgaoPagador AS VARCHAR(150)),
 		CASE WHEN CodigoDaUnidadeGestoraPagadora IN ('', '-11', '-1', '-3') THEN 0 ELSE CAST(CodigoDaUnidadeGestoraPagadora AS INT) END,
 		CAST(NomeDaUnidadeGestoraPagadora AS VARCHAR(150)),
 		CAST(TipoDePagamento AS VARCHAR(150)),
-		CASE WHEN Valor IN ('', '-1') THEN 0 ELSE CAST(REPLACE(Valor, ',', '.') AS DECIMAL(18,2)) END
+		CASE WHEN Valor IN ('', '-1') THEN 0 ELSE CAST(REPLACE(Valor, ',', '.') AS DECIMAL(18,2)) END	--Todos os decimal a partir daqui serão verificados o mesmo caso dos inteiros, e eles serão converter a ',' para '.', que é o padrão usado no SQL SERVER
 	FROM ##temp_pagamneto_csv_tb
 END;
 GO
 
 
-CREATE PROCEDURE SP_CARREGA_PAGAMENTO
+CREATE PROCEDURE SP_CARREGA_PAGAMENTO		--Stored Procedure responsável por carregar os dados tratados para sua respectiva tabela
 AS
 BEGIN
 
-	WITH CTE AS (
+	WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
 		SELECT
 			CodigodoOrgaoSuperior,
 			NomeDoOrgaoSuperior,
-			ROW_NUMBER() OVER(PARTITION BY CodigodoOrgaoSuperior ORDER BY CodigodoOrgaoSuperior) as rn
+			ROW_NUMBER() OVER(PARTITION BY CodigodoOrgaoSuperior ORDER BY CodigodoOrgaoSuperior) as rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
 			FROM ##temp_pagamento_convertido_tb
-			WHERE CodigodoOrgaoSuperior <> 0
+			WHERE CodigodoOrgaoSuperior <> 0															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 		)
-		INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)
+		INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)				--Preenchimento da tabela OrgaoSuperior
 		SELECT
 			CodigodoOrgaoSuperior,
 			NomeDoOrgaoSuperior
 		FROM CTE
-		WHERE CTE.rn = 1 
-		AND NOT EXISTS (
+		WHERE CTE.rn = 1 									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+		AND NOT EXISTS (									--Verificando se o valor já existe na tabela principal
 			SELECT 1 FROM OrgaoSuperior o
 		    WHERE o.IdOrgaoSuperior = CTE.CodigodoOrgaoSuperior
 			);
 	
-	WITH CTE AS (
+	WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
 		SELECT
 			CodigoDoOrgaoPagador,
 			NomeDoOrgaoPagador,
-			ROW_NUMBER() OVER(PARTITION BY CodigoDoOrgaoPagador ORDER BY CodigoDoOrgaoPagador) as rn
+			ROW_NUMBER() OVER(PARTITION BY CodigoDoOrgaoPagador ORDER BY CodigoDoOrgaoPagador) as rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
 			FROM ##temp_pagamento_convertido_tb
-			WHERE CodigoDoOrgaoPagador <> 0
+			WHERE CodigoDoOrgaoPagador <> 0															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 		)
-		INSERT INTO OrgaoPagador(IdOrgaoPagador, NomeOrgaoPagador)
+		INSERT INTO OrgaoPagador(IdOrgaoPagador, NomeOrgaoPagador)				--Preenchimento da tabela OrgaoPagador
 		SELECT
 			CodigoDoOrgaoPagador,
 			NomeDoOrgaoPagador
 		FROM CTE
-		WHERE CTE.rn = 1 
-		AND NOT EXISTS (
+		WHERE CTE.rn = 1  									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+		AND NOT EXISTS (									--Verificando se o valor já existe na tabela principal
 			SELECT 1 FROM OrgaoPagador o
 		    WHERE o.IdOrgaoPagador = CTE.CodigoDoOrgaoPagador
 			);
 	
 	
-	WITH CTE AS (
+	WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
 		SELECT
 			CodigoDaUnidadeGestoraPagadora,
 			NomeDaUnidadeGestoraPagadora,
-			ROW_NUMBER() OVER(PARTITION BY CodigoDaUnidadeGestoraPagadora ORDER BY CodigoDaUnidadeGestoraPagadora) as rn
+			ROW_NUMBER() OVER(PARTITION BY CodigoDaUnidadeGestoraPagadora ORDER BY CodigoDaUnidadeGestoraPagadora) as rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
 			FROM ##temp_pagamento_convertido_tb
-			WHERE CodigoDaUnidadeGestoraPagadora <> 0
+			WHERE CodigoDaUnidadeGestoraPagadora <> 0															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
 		)
-		INSERT INTO UnidadeGestoraPagadora (IdUnidadeGestoraPagadora, NomeUnidadeGestoraPagadora)
+		INSERT INTO UnidadeGestoraPagadora (IdUnidadeGestoraPagadora, NomeUnidadeGestoraPagadora)				--Preenchimento da tabela UnidadeGestoraPagadora
 		SELECT
 			CodigoDaUnidadeGestoraPagadora,
 			NomeDaUnidadeGestoraPagadora
 		FROM CTE
-		WHERE CTE.rn = 1 
-		AND NOT EXISTS (
+		WHERE CTE.rn = 1  									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+		AND NOT EXISTS (									--Verificando se o valor já existe na tabela principal
 			SELECT 1 FROM UnidadeGestoraPagadora u
 		    WHERE u.IdUnidadeGestoraPagadora = CTE.CodigoDaUnidadeGestoraPagadora
 			);
 	
-	INSERT INTO Pagamento (
+	INSERT INTO Pagamento (				--Preenchimento da tabela pagamento
 		TipodePagamento,
 	    ValordaDespeza,
 	    IdOrgaoSuperior,
@@ -487,18 +487,18 @@ BEGIN
 		SELECT
 			TipoDePagamento,
 			Valor,
-			NULLIF(CodigodoOrgaoSuperior,0),
-			NULLIF(CodigoDaUnidadeGestoraPagadora,0),
+			NULLIF(CodigodoOrgaoSuperior,0),				--caso esteja como '0', coloca NULL
+			NULLIF(CodigoDaUnidadeGestoraPagadora,0),		--caso esteja como '0', coloca NULL
 			IdentificadorDoprocessoDeViagem,
-			NULLIF(CodigoDoOrgaoPagador,0)
+			NULLIF(CodigoDoOrgaoPagador,0)					--caso esteja como '0', coloca NULL
 		FROM ##temp_pagamento_convertido_tb tp
-		INNER JOIN Viagem v
+		INNER JOIN Viagem v									--JOIIN para garantir que todas as passagens tenham um Idviagem 
 		on tp.IdentificadorDoProcessoDeViagem = v.IdViagem
 END;
 GO
 
 
-CREATE PROCEDURE SP_ETL_PAGAMENTO
+CREATE PROCEDURE SP_ETL_PAGAMENTO			--Stored Procedure que executa as SP de ETL pagamento
 @CAMINHO_CSV VARCHAR(150)
 AS
 BEGIN

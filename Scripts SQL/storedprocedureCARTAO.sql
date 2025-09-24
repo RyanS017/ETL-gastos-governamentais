@@ -19,11 +19,21 @@ BEGIN
     SET NOCOUNT ON;
 
     CREATE TABLE ##temp_cartao_bruto (
-        CODIGOORGAOSUPERIOR NVARCHAR(MAX), NOMEORGAOSUPERIOR NVARCHAR(MAX), CODIGOORGAO NVARCHAR(MAX),
-        NOMEORGAO NVARCHAR(MAX), CODIGOUNIDADEGESTORA NVARCHAR(MAX), NOMEUNIDADEGESTORA NVARCHAR(MAX),
-        ANOEXTRATO NVARCHAR(MAX), MÊSEXTRATO NVARCHAR(MAX), CPFPORTADOR NVARCHAR(MAX), NOMEPORTADOR NVARCHAR(MAX),
-        CNPJOUCPFFAVORECIDO NVARCHAR(MAX), NOMEFAVORECIDO NVARCHAR(MAX), TRANSAÇAO NVARCHAR(MAX),
-        DATATRANSAÇAO NVARCHAR(MAX), VALORTRANSAÇAO NVARCHAR(MAX)
+        CODIGOORGAOSUPERIOR VARCHAR(MAX), 
+		NOMEORGAOSUPERIOR VARCHAR(MAX), 
+		CODIGOORGAO VARCHAR(MAX),
+        NOMEORGAO VARCHAR(MAX), 
+		CODIGOUNIDADEGESTORA VARCHAR(MAX),
+		NOMEUNIDADEGESTORA VARCHAR(MAX),
+        ANOEXTRATO VARCHAR(MAX), 
+		MÊSEXTRATO VARCHAR(MAX), 
+		CPFPORTADOR VARCHAR(MAX), 
+		NOMEPORTADOR VARCHAR(MAX),
+        CNPJOUCPFFAVORECIDO VARCHAR(MAX), 
+		NOMEFAVORECIDO VARCHAR(MAX), 
+		TRANSAÇAO VARCHAR(MAX),
+        DATATRANSAÇAO VARCHAR(MAX), 
+		VALORTRANSAÇAO VARCHAR(MAX)
     );
     
     DECLARE @sql NVARCHAR(MAX);
@@ -38,15 +48,36 @@ AS
 BEGIN
     SET NOCOUNT ON;
   
-    UPDATE ##temp_cartao_bruto SET CODIGOORGAOSUPERIOR = REPLACE(CODIGOORGAOSUPERIOR, '"', ''), NOMEORGAOSUPERIOR = REPLACE(NOMEORGAOSUPERIOR, '"', ''), CODIGOORGAO = REPLACE(CODIGOORGAO, '"', ''), NOMEORGAO = REPLACE(NOMEORGAO, '"', ''), CODIGOUNIDADEGESTORA = REPLACE(CODIGOUNIDADEGESTORA, '"', ''), NOMEUNIDADEGESTORA = REPLACE(NOMEUNIDADEGESTORA, '"', ''), ANOEXTRATO = REPLACE(ANOEXTRATO, '"', ''), MÊSEXTRATO = REPLACE(MÊSEXTRATO, '"', ''), CPFPORTADOR = REPLACE(CPFPORTADOR, '"', ''), NOMEPORTADOR = REPLACE(NOMEPORTADOR, '"', ''), CNPJOUCPFFAVORECIDO = REPLACE(CNPJOUCPFFAVORECIDO, '"', ''), NOMEFAVORECIDO = REPLACE(NOMEFAVORECIDO, '"', ''), TRANSAÇAO = REPLACE(TRANSAÇAO, '"', ''), DATATRANSAÇAO = REPLACE(DATATRANSAÇAO, '"', ''), VALORTRANSAÇAO = REPLACE(VALORTRANSAÇAO, '"', '');
+    UPDATE ##temp_cartao_bruto 
+	SET
+		CODIGOORGAOSUPERIOR = REPLACE(CODIGOORGAOSUPERIOR, '"', ''), 
+		NOMEORGAOSUPERIOR = REPLACE(NOMEORGAOSUPERIOR, '"', ''), 
+		CODIGOORGAO = REPLACE(CODIGOORGAO, '"', ''),
+		NOMEORGAO = REPLACE(NOMEORGAO, '"', ''),
+		CODIGOUNIDADEGESTORA = REPLACE(CODIGOUNIDADEGESTORA, '"', ''),
+		NOMEUNIDADEGESTORA = REPLACE(NOMEUNIDADEGESTORA, '"', ''), 
+		ANOEXTRATO = REPLACE(ANOEXTRATO, '"', ''),
+		MÊSEXTRATO = REPLACE(MÊSEXTRATO, '"', ''), 
+		CPFPORTADOR = REPLACE(CPFPORTADOR, '"', ''), 
+		NOMEPORTADOR = REPLACE(NOMEPORTADOR, '"', ''),
+		CNPJOUCPFFAVORECIDO = REPLACE(CNPJOUCPFFAVORECIDO, '"', ''), 
+		NOMEFAVORECIDO = REPLACE(NOMEFAVORECIDO, '"', ''), 
+		TRANSAÇAO = REPLACE(TRANSAÇAO, '"', ''), 
+		DATATRANSAÇAO = REPLACE(DATATRANSAÇAO, '"', ''), 
+		VALORTRANSAÇAO = REPLACE(VALORTRANSAÇAO, '"', '');
 
   
     IF OBJECT_ID('tempdb..##temp_cartao_convertido') IS NOT NULL DROP TABLE ##temp_cartao_convertido;
     CREATE TABLE ##temp_cartao_convertido (
-        DataTransacao DATE, ValorTransacao DECIMAL(18,2), DataExtrato DATE,
-        IdOrgaoSuperior INT, NomeOrgaoSuperior VARCHAR(150),
-        IdOrgaoSubordinado INT, NomeOrgaoSubordinado VARCHAR(150),
-        IdUnidadeGestora INT, NomeUnidadeGestora VARCHAR(150)
+        DataTransacao DATE,
+		ValorTransacao DECIMAL(18,2),
+		DataExtrato DATE,
+        IdOrgaoSuperior INT, 
+		NomeOrgaoSuperior VARCHAR(150),
+        IdOrgaoSubordinado INT, 
+		NomeOrgaoSubordinado VARCHAR(150),
+        IdUnidadeGestora INT, 
+		NomeUnidadeGestora VARCHAR(150)
     );
 
   
@@ -66,17 +97,30 @@ GO
 CREATE PROCEDURE SP_CARREGA_CSV_CARTAO
 AS
 BEGIN
-    SET NOCOUNT ON;
+
 
 
     INSERT INTO dbo.OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)
-    SELECT DISTINCT IdOrgaoSuperior, NomeOrgaoSuperior FROM ##temp_cartao_convertido temp WHERE IdOrgaoSuperior IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.OrgaoSuperior WHERE IdOrgaoSuperior = temp.IdOrgaoSuperior);
+    SELECT DISTINCT IdOrgaoSuperior, NomeOrgaoSuperior 
+	FROM ##temp_cartao_convertido temp 
+	WHERE IdOrgaoSuperior IS NOT NULL AND NOT EXISTS 
+	(SELECT 1 FROM dbo.OrgaoSuperior WHERE IdOrgaoSuperior = temp.IdOrgaoSuperior);
 
     INSERT INTO dbo.OrgaoSubordinado (IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior)
-    SELECT DISTINCT IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior FROM ##temp_cartao_convertido temp WHERE IdOrgaoSubordinado IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.OrgaoSubordinado WHERE IdOrgaoSubordinado = temp.IdOrgaoSubordinado);
+    SELECT DISTINCT IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior 
+	FROM ##temp_cartao_convertido temp 
+	WHERE IdOrgaoSubordinado IS NOT NULL 
+	AND NOT EXISTS (
+	SELECT 1 
+	FROM dbo.OrgaoSubordinado 
+	WHERE IdOrgaoSubordinado = temp.IdOrgaoSubordinado);
 
     INSERT INTO dbo.UnidadeGestora (IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior)
-    SELECT DISTINCT IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior FROM ##temp_cartao_convertido temp WHERE IdUnidadeGestora IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.UnidadeGestora WHERE IdUnidadeGestora = temp.IdUnidadeGestora);
+    SELECT DISTINCT IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior 
+	FROM ##temp_cartao_convertido temp 
+	WHERE IdUnidadeGestora IS NOT NULL AND NOT EXISTS 
+	(SELECT 1 FROM dbo.UnidadeGestora 
+	WHERE IdUnidadeGestora = temp.IdUnidadeGestora);
 
     
     DECLARE @DataProvisoria DATE;
