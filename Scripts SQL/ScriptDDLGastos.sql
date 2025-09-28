@@ -48,14 +48,14 @@ CREATE TABLE CategoriaEconomica (
 CREATE TABLE ModalidadeDespesa (
     IdModalidadeDespesa INT PRIMARY KEY,
     NomeModalidadeDespesa VARCHAR(150) NOT NULL,
-    IdGrupoDespesa INT NOT NULL,
+    IdGrupoDespesa INT NULL,
     FOREIGN KEY (IdGrupoDespesa) REFERENCES GrupoDespesa(IdGrupoDespesa)
 );
 
 CREATE TABLE ElementoDespesa (
     IdElementoDespesa INT PRIMARY KEY,
     NomeElementoDespesa VARCHAR(150) NOT NULL,
-    IdGrupoDespesa INT NOT NULL,
+    IdGrupoDespesa INT NULL,
     FOREIGN KEY (IdGrupoDespesa) REFERENCES GrupoDespesa(IdGrupoDespesa)
 );
 
@@ -123,15 +123,15 @@ CREATE TABLE Despesas (
     ValorRestosAPagarInscritos DECIMAL(18,2) NOT NULL DEFAULT 0,
     ValorRestosAPagarCancelados DECIMAL(18,2) NOT NULL DEFAULT 0,
 
-    IdElementoDespesa INT NOT NULL,
+    IdElementoDespesa INT NULL,
     IdOrgaoSuperior INT NOT NULL,
-    IdCategoriaEconomica INT NOT NULL,
+    IdCategoriaEconomica INT NULL,
     IdGestao INT NULL,
-    IdProgramaOrcamentario INT NOT NULL,
+    IdProgramaOrcamentario INT NULL,
     IdLocalizador INT NULL,
     IdMandato INT NOT NULL,
-    IdAcao VARCHAR(10) NOT NULL,
-    IdFuncao INT NOT NULL,
+    IdAcao VARCHAR(10) NULL,
+    IdFuncao INT NULL,
 
     CONSTRAINT FK_Despesas_ElementoDespesa FOREIGN KEY (IdElementoDespesa) REFERENCES ElementoDespesa(IdElementoDespesa),
     CONSTRAINT FK_Despesas_OrgaoSuperior FOREIGN KEY (IdOrgaoSuperior) REFERENCES OrgaoSuperior(IdOrgaoSuperior),

@@ -181,34 +181,65 @@ CREATE TABLE ##temp_despesas_Convertido(		--Criação de uma tabela que irá recebe
 		ValorRestosPagarPagos DECIMAL(18,2)
 	);
 
+
+	DELETE																		--Alguns de valor estavam vindo com informações de outras colunas, então aqui nós identificamos eles e apagamos
+	FROM ##temp_depesas
+	WHERE TRY_CAST(CodigoOrgaoSuperior AS INT) IS NULL 
+	OR TRY_CAST(CodigoOrgaoSubordinado AS INT) IS NULL 
+	OR TRY_CAST(CodigoUnidadeGestora AS INT) IS NULL 
+	OR TRY_CAST(CodigoGestao AS INT) IS NULL 
+	OR TRY_CAST(CodigoUnidadeOrcamentaria AS INT) IS NULL 
+	OR TRY_CAST(CodigoFuncao AS INT) IS NULL 
+	OR TRY_CAST(CodigoSubfuncao AS INT) IS NULL 
+	OR TRY_CAST(CodigoProgramaOrcamentario AS INT) IS NULL 
+	OR TRY_CAST(CodigoLocalizador AS INT) IS NULL 
+	OR TRY_CAST(CodigoCategoriaEconomica AS INT) IS NULL 
+	OR TRY_CAST(CodigoGrupoDespesa AS INT) IS NULL 
+	OR TRY_CAST(CodigoElementoDespesa AS INT) IS NULL 
+	OR TRY_CAST(CodigoModalidadeDespesa AS INT) IS NULL 
+	AND CodigoOrgaoSuperior NOT IN ('', '-1', 'I', '-3')
+	AND CodigoOrgaoSubordinado NOT IN ('', '-1', 'I', '-3')
+	AND CodigoUnidadeGestora NOT IN ('', '-1', 'I', '-3')
+	AND CodigoGestao NOT IN ('', '-1', 'I', '-3')
+	AND CodigoUnidadeOrcamentaria NOT IN ('', '-1', 'I', '-3')
+	AND CodigoFuncao NOT IN ('', '-1', 'I', '-3')
+	AND CodigoSubfuncao NOT IN ('', '-1', 'I', '-3')
+	AND CodigoProgramaOrcamentario NOT IN ('', '-1', 'I', '-3')
+	AND CodigoLocalizador NOT IN ('', '-1', 'I', '-3')
+	AND CodigoCategoriaEconomica NOT IN ('', '-1', 'I', '-3')
+	AND CodigoGrupoDespesa NOT IN ('', '-1', 'I', '-3')
+	AND CodigoElementoDespesa NOT IN ('', '-1', 'I', '-3')
+	AND CodigoModalidadeDespesa NOT IN ('', '-1', 'I', '-3')
+
+
 INSERT INTO ##temp_despesas_Convertido			--Casting dos dados
 SELECT
     CASE 
         WHEN AnoMesLancamento IS NULL OR AnoMesLancamento = '' THEN NULL
         ELSE CAST(CONCAT(REPLACE(AnoMesLancamento,'/','-'), '-01') AS DATE) END,				--Como a data está em formato 12/2025, é substituido o / por -, e adicionado o dia 01 no final para ocorrer a conversão
 
-    CASE WHEN CodigoOrgaoSuperior IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSuperior AS INT) END, --A partir daqui todos os dados que forem inteiros ocorrerá uma verificação que caso esteja como '' ou '-1', sejam substituido para '0', antes de sua conversão
+    CASE WHEN CodigoOrgaoSuperior IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoOrgaoSuperior AS INT) END, --A partir daqui todos os dados que forem inteiros ocorrerá uma verificação que caso esteja como '' ou '-1', sejam substituido para '0', antes de sua conversão
     CAST(NomeOrgaoSuperior AS VARCHAR(150)),
 
-    CASE WHEN CodigoOrgaoSubordinado IN ('','-1') THEN 0 ELSE CAST(CodigoOrgaoSubordinado AS INT) END,
+    CASE WHEN CodigoOrgaoSubordinado IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoOrgaoSubordinado AS INT) END,
     CAST(NomeOrgaoSubordinado AS VARCHAR(150)),
 
-    CASE WHEN CodigoUnidadeGestora IN ('','-1') THEN 0 ELSE CAST(CodigoUnidadeGestora AS INT) END,
+    CASE WHEN CodigoUnidadeGestora IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoUnidadeGestora AS INT) END,
     CAST(NomeUnidadeGestora AS VARCHAR(150)),
 
-    CASE WHEN CodigoGestao IN ('','-1') THEN 0 ELSE CAST(CodigoGestao AS INT) END,
+    CASE WHEN CodigoGestao IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoGestao AS INT) END,
     CAST(NomeGestao AS VARCHAR(150)),
 
-    CASE WHEN CodigoUnidadeOrcamentaria IN ('','-1') THEN 0 ELSE CAST(CodigoUnidadeOrcamentaria AS INT) END,
+    CASE WHEN CodigoUnidadeOrcamentaria IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoUnidadeOrcamentaria AS INT) END,
     CAST(NomeUnidadeOrcamentaria AS VARCHAR(150)),
 
-    CASE WHEN CodigoFuncao IN ('','-1') THEN 0 ELSE CAST(CodigoFuncao AS INT) END,
+    CASE WHEN CodigoFuncao IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoFuncao AS INT) END,
     CAST(NomeFuncao AS VARCHAR(150)),
 
-    CASE WHEN CodigoSubfuncao IN ('','-1') THEN 0 ELSE CAST(CodigoSubfuncao AS INT) END,
+    CASE WHEN CodigoSubfuncao IN ('','-1','I','-3', ' JUVENT') THEN 0 ELSE CAST(CodigoSubfuncao AS INT) END,
     CAST(NomeSubfuncao AS VARCHAR(150)),
 
-    CASE WHEN CodigoProgramaOrcamentario IN ('','-1') THEN 0 ELSE CAST(CodigoProgramaOrcamentario AS INT) END,
+    CASE WHEN CodigoProgramaOrcamentario IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoProgramaOrcamentario AS INT) END,
     CAST(NomeProgramaOrcamentario AS VARCHAR(150)),
 
     CAST(CodigoAcao AS VARCHAR(10)),
@@ -218,23 +249,23 @@ SELECT
     CAST(Uf AS CHAR(2)),
     CAST(Municipio AS VARCHAR(150)),
 
-    CASE WHEN CodigoLocalizador IN ('','-1') THEN 0 ELSE CAST(CodigoLocalizador AS INT) END,
+    CASE WHEN CodigoLocalizador IN ('','-1','I','-3',' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoLocalizador AS INT) END,
     CAST(NomeLocalizador AS VARCHAR(150)),
 
     CAST(SiglaLocalizador AS VARCHAR(10)),
 
     CAST(DescricaoComplementarLocalizador AS VARCHAR(155)),
 
-    CASE WHEN CodigoCategoriaEconomica IN ('','-1') THEN 0 ELSE CAST(CodigoCategoriaEconomica AS INT) END,
+    CASE WHEN CodigoCategoriaEconomica IN ('','-1','I','-3',' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoCategoriaEconomica AS INT) END,
     CAST(NomeCategoriaEconomica AS VARCHAR(MAX)),
 
-    CASE WHEN CodigoGrupoDespesa IN ('','-1') THEN 0 ELSE CAST(CodigoGrupoDespesa AS INT) END,
+    CASE WHEN CodigoGrupoDespesa IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoGrupoDespesa AS INT) END,
     CAST(NomeGrupoDespesa AS VARCHAR(MAX)),
 
-    CASE WHEN CodigoElementoDespesa IN ('','-1') THEN 0 ELSE CAST(CodigoElementoDespesa AS INT) END,
+    CASE WHEN CodigoElementoDespesa IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoElementoDespesa AS INT) END,
     CAST(NomeElementoDespesa AS VARCHAR(MAX)),
 
-    CASE WHEN CodigoModalidadeDespesa IN ('','-1') THEN 0 ELSE CAST(CodigoModalidadeDespesa AS INT) END,
+    CASE WHEN CodigoModalidadeDespesa IN ('','-1','I','-3', ' JUVENT','BACELAR / EMENDA 2') THEN 0 ELSE CAST(CodigoModalidadeDespesa AS INT) END,
     CAST(ModalidadeDespesa AS VARCHAR(MAX)),
 
     
@@ -546,15 +577,15 @@ SELECT
     t.ValorPago,
     t.ValorRestosPagarInscritos,
     t.ValorRestosPagarCancelado,
-    t.CodigoElementoDespesa,
+    NULLIF(t.CodigoElementoDespesa,0),
     t.CodigoOrgaoSuperior,
-    t.CodigoCategoriaEconomica,
+    NULLIF(t.CodigoCategoriaEconomica,0),
     NULLIF(t.CodigoGestao, 0),		--caso esteja como '0', coloca NULL
-    t.CodigoProgramaOrcamentario,   --caso esteja como '0', coloca NULL
+    NULLIF(t.CodigoProgramaOrcamentario,0),   --caso esteja como '0', coloca NULL
     NULLIF(t.CodigoLocalizador,0),
     m.IdMandato, 
     t.CodigoAcao,
-    t.CodigoFuncao
+    NULLIF(t.CodigoFuncao,0)
 FROM ##temp_despesas_Convertido t
 JOIN Mandato m						--JOIN para saber qual o mandato daquela data
     ON t.AnoMesLancamento >= m.DataInicio
