@@ -38,4 +38,5 @@ C:/Users/rapha/Documents/ETL-dados-governamentais/dataset/Viagens/2023/2023_Paga
 C:/Users/rapha/Documents/ETL-dados-governamentais/dataset/Viagens/2023/2023_Passagem.csv filter=lfs diff=lfs merge=lfs -text
 C:/Users/rapha/Documents/ETL-dados-governamentais/dataset/Viagens/2023/2023_Viagem.csv filter=lfs diff=lfs merge=lfs -text
 C:/Users/rapha/Documents/ETL-dados-governamentais/dataset/Viagens/2024/2024_Pagamento.csv filter=lfs diff=lfs merge=lfs -text
+C:/Users/rapha/Documents/ETL-dados-governamentais/dataset/Viagens/2015/2015_Viagem.csv filter=lfs diff=lfs merge=lfs -text
 *.csv filter=lfs diff=lfs merge=lfs -text
