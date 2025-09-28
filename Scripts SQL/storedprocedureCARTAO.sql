@@ -37,7 +37,7 @@ BEGIN
     );
     
     DECLARE @sql NVARCHAR(MAX);
-    SET @sql = N'BULK INSERT ##temp_cartao_bruto FROM ''' + @CAMINHO_DO_ARQUIVO + N''' WITH (FIRSTROW = 2, FIELDTERMINATOR = '';'', ROWTERMINATOR = ''\n'', CODEPAGE = ''1252'')';
+    SET @sql = N'BULK INSERT ##temp_cartao_bruto FROM ''' + @CAMINHO_DO_ARQUIVO + N''' WITH (FIRSTROW = 2, FIELDTERMINATOR = '';'', ROWTERMINATOR = ''0x0A'', CODEPAGE = ''1252'')';
     EXEC sp_executesql @sql;
 END;
 GO

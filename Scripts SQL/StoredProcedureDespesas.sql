@@ -64,7 +64,7 @@ BEGIN
     FROM ''' + @CAMINHO + N'''
     WITH (
         FIELDTERMINATOR = '';'' ,
-        ROWTERMINATOR = ''\n'',
+        ROWTERMINATOR = ''0x0A'',
         FIRSTROW = 2,
         CODEPAGE = ''1252''
     );';							--Instrução para realização do BULK INSERT

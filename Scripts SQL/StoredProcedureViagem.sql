@@ -39,7 +39,7 @@ DECLARE @sql NVARCHAR(MAX);   --Criação de uma variavél temporaria para armazern
     FROM ''' + @CAMINHO + N'''
     WITH (
         FIELDTERMINATOR = '';'' ,
-        ROWTERMINATOR = ''\n'',
+        ROWTERMINATOR = ''0x0A'',
         FIRSTROW = 2,
         CODEPAGE = ''1252''
     );';							--Instrução para realização do BULK INSERT
@@ -168,7 +168,23 @@ BEGIN
 			SELECT 1 FROM OrgaoSolicitante o
 			WHERE o.IdOrgaoSolicitante = CTE.CodigoOrgaoSolicitante
 		);
-	
+
+
+WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
+		SELECT
+		tp.IdentificadorDoprocessoDeViagem,
+		tp.Periodo_DataDeFim,
+		tp.Periodo_DataDeInicio,
+		tp.Destinos,
+		tp.Motivo,
+		tp.ValorDiarias,
+		tp.ValorPassagens,
+		tp.ValorOutrosGastos,
+		tp.CodigoDoOrgaoSuperior,		--caso esteja como '0', coloca NULL
+		tp.CodigoOrgaoSolicitante,		--caso esteja como '0', coloca NULL
+		ROW_NUMBER() OVER (PARTITION BY IdentificadorDoprocessoDeViagem ORDER BY IdentificadorDoprocessoDeViagem) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
+		FROM ##temp_viajens_convertido_tb tp																--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
+	)
 	INSERT INTO Viagem (		--Preenchimento da tabela de Viagem
 		IdViagem,
 		PeriodoFim,
@@ -180,16 +196,16 @@ BEGIN
 		IdOrgaoSolicitante
 	)
 	SELECT 
-		tp.IdentificadorDoprocessoDeViagem,
-		tp.Periodo_DataDeFim,
-		tp.Periodo_DataDeInicio,
-		tp.Destinos,
-		tp.Motivo,
-		tp.ValorDiarias + tp.ValorPassagens + tp.ValorOutrosGastos,
-		NULLIF(tp.CodigoDoOrgaoSuperior, 0),		--caso esteja como '0', coloca NULL
-		NULLIF(tp.CodigoOrgaoSolicitante, 0)		--caso esteja como '0', coloca NULL
-	
-		FROM ##temp_viajens_convertido_tb tp
+		CTE.IdentificadorDoprocessoDeViagem,
+		CTE.Periodo_DataDeFim,
+		CTE.Periodo_DataDeInicio,
+		CTE.Destinos,
+		CTE.Motivo,
+		CTE.ValorDiarias + CTE.ValorPassagens + CTE.ValorOutrosGastos,
+		NULLIF(CTE.CodigoDoOrgaoSuperior, 0),		--caso esteja como '0', coloca NULL
+		NULLIF(CTE.CodigoOrgaoSolicitante, 0)		--caso esteja como '0', coloca NULL
+		FROM CTE
+		WHERE  CTE.rn = 1 AND NOT EXISTS (SELECT 1 FROM Viagem v WHERE v.IdViagem = CTE.IdentificadorDoprocessoDeViagem)
 END;
 GO
 
@@ -243,7 +259,7 @@ BEGIN
 	    FROM ''' + @CAMINHO + N'''
 	    WITH (
 	        FIELDTERMINATOR = '';'' ,
-	        ROWTERMINATOR = ''\n'',
+	        ROWTERMINATOR = ''0x0A'',
 	        FIRSTROW = 2,
 	        CODEPAGE = ''1252''
 	    );';							--Instrução para realização do BULK INSERT
@@ -357,7 +373,7 @@ BEGIN
 		    FROM ''' + @CAMINHO + N'''
 		    WITH (
 		        FIELDTERMINATOR = '';'' ,
-		        ROWTERMINATOR = ''\n'',
+		        ROWTERMINATOR = ''0x0A'',
 		        FIRSTROW = 2,
 		        CODEPAGE = ''1252''
 		    );';							--Instrução para realização do BULK INSERT
