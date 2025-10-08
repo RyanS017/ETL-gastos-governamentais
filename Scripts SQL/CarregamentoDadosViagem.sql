@@ -1,10 +1,9 @@
 Use ProjetoGastosGovernamentais
 GO
 
-
 -- Trocar o caminho pelo caminho de sua maquina
 DECLARE @CaminhoBase VARCHAR(200) = 
-    'C:\Users\rapha\Documents\ETL-dados-governamentais\dataset\Viagens\'
+    'C:\Users\Leandro Felix\Documents\Projeto Banco de Dados\ETL-gastos-governamentais\dataset\Viagens\'
 
 DECLARE @CaminhoCompleto VARCHAR(300)
 ------------------------
@@ -14,7 +13,7 @@ SET @CaminhoCompleto = @CaminhoBase + '2015\2015_Viagem.csv'
 EXEC SP_ETL_VIAGEM @CAMINHO_CSV = @CaminhoCompleto
 
 SET @CaminhoCompleto = @CaminhoBase + '2015\2015_Pagamento.csv'
-EXEC SP_ETL_PAGAMENTO @CAMINHO_CSV = @CaminhoCompleto
+EXEC SP_ETL_PAGAMENTO @CAMINHO_CSV = @CaminhoCompleto 
 
 SET @CaminhoCompleto = @CaminhoBase + '2015\2015_Passagem.csv'
 EXEC SP_ETL_PASSAGEM @CAMINHO_CSV = @CaminhoCompleto

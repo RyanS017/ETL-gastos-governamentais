@@ -7,7 +7,7 @@ GO
 
 --Troque esse caminho pelo que esta em sua maquina
 DECLARE @CaminhoBase VARCHAR(200) = 
-    'C:\Users\rapha\Documents\ETL-dados-governamentais\dataset\Execução da Despesa\'
+    'C:\Users\Leandro Felix\Documents\Projeto Banco de Dados\ETL-gastos-governamentais\dataset\ExecuÃ§Ã£o da Despesa\'
 
 DECLARE @CaminhoCompleto VARCHAR(300)
 ------------------------
@@ -206,7 +206,6 @@ EXEC SP_ETL_DESPESAS @CAMINHO_CSV = @CaminhoCompleto
 SET @CaminhoCompleto = @CaminhoBase + '2021\202112_Despesas.csv'
 EXEC SP_ETL_DESPESAS @CAMINHO_CSV = @CaminhoCompleto
 
-DELETE FROM Despesas
 ------------------------
 -- ANO 2022
 ------------------------

@@ -3,7 +3,7 @@ GO
 
 --Coloque o caminho da sua maquina na variavel
 DECLARE @CaminhoBase VARCHAR(200) = 
-    'C:\Users\rapha\Documents\ETL-dados-governamentais\dataset\Cartão de Pagamento\'
+    'C:\Users\Leandro Felix\Documents\ETL-dados-governamentais\dataset\Cartï¿½o de Pagamento\'
 
 DECLARE @CaminhoCompleto VARCHAR(300)
 ------------------------
