@@ -1,4 +1,4 @@
--- Base para perguntas sobre Tecnologia, Saúde, Educação, Segurança Pública. (Exemplo: SELECT * FROM vw_DespesasPorMandatoFuncao WHERE NomeFuncao = 'Ciência e Tecnologia')
+-- Base para perguntas sobre Ciência e Tecnologia, Saúde, Educação, Segurança Pública. (Exemplo: SELECT * FROM vw_DespesasPorMandatoFuncao WHERE NomeFuncao = 'Ciência e Tecnologia')
 CREATE VIEW vw_DespesasPorMandatoFuncao
 AS
 SELECT p.NomePresidente, m.IdMandato, m.DataInicio, m.DataFim, f.NomeFuncao,
@@ -42,20 +42,22 @@ AS
 SELECT v.IdViagem, v.PeriodoInicio, v.PeriodoFim, v.Gastos AS ValorGasto, p.NomePresidente
 FROM Viagem v
 JOIN Mandato m
-    ON (CAST(v.PeriodoInicio AS DATE) <= ISNULL(m.DataFim, '9999-12-31')
-        AND CAST(v.PeriodoFim AS DATE) >= m.DataInicio)
+ON (CAST(v.PeriodoInicio AS DATE) <= ISNULL(m.DataFim, '9999-12-31')
+AND CAST(v.PeriodoFim AS DATE) >= m.DataInicio)
 JOIN Presidente p ON m.IdPresidente = p.IdPresidente;
 
 
--- Base para redução ou aumento orçamentário.
+-- Base para redução ou aumento orçamentário. 
 CREATE VIEW vw_DespesasPorFuncaoAno
 AS
-SELECT f.NomeFuncao,
+SELECT f.NomeFuncao, m.IdMandato, p.NomePresidente,
 YEAR(d.DataLancamento) AS Ano,
 SUM(d.ValorPago) AS TotalPago
 FROM Despesas d
 JOIN Funcao f ON d.IdFuncao = f.IdFuncao
-GROUP BY f.NomeFuncao, YEAR(d.DataLancamento);
+JOIN Mandato m ON d.IdMandato = m.IdMandato
+JOIN Presidente p ON m.IdPresidente = p.IdPresidente
+GROUP BY f.NomeFuncao, m.IdMandato, p.NomePresidente, YEAR(d.DataLancamento);
 
 
 -- Base para análises de impacto da pandemia.
@@ -66,5 +68,5 @@ YEAR(d.DataLancamento) AS Ano,
 SUM(d.ValorPago) AS TotalPago
 FROM Despesas d
 JOIN Funcao f ON d.IdFuncao = f.IdFuncao
-WHERE YEAR(d.DataLancamento) BETWEEN 2019 AND 2022
+WHERE YEAR(d.DataLancamento) BETWEEN 2020 AND 2022
 GROUP BY f.NomeFuncao, YEAR(d.DataLancamento);
