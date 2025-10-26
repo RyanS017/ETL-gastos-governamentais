@@ -16,7 +16,6 @@ CREATE PROCEDURE SP_EXTRAI_CSV_CARTAO
     @CAMINHO_DO_ARQUIVO VARCHAR(255)
 AS
 BEGIN
-    SET NOCOUNT ON;
 
     CREATE TABLE ##temp_cartao_bruto (
         CODIGOORGAOSUPERIOR VARCHAR(MAX), 
@@ -37,7 +36,7 @@ BEGIN
     );
     
     DECLARE @sql NVARCHAR(MAX);
-    SET @sql = N'BULK INSERT ##temp_cartao_bruto FROM ''' + @CAMINHO_DO_ARQUIVO + N''' WITH (FIRSTROW = 2, FIELDTERMINATOR = '';'', ROWTERMINATOR = ''0x0A'', CODEPAGE = ''1252'')';
+    SET @sql = N'BULK INSERT ##temp_cartao_bruto FROM ''' + @CAMINHO_DO_ARQUIVO + N''' WITH (FIRSTROW = 2, FIELDTERMINATOR = '';'', ROWTERMINATOR = ''0x0A'', CODEPAGE = ''RAW'')';
     EXEC sp_executesql @sql;
 END;
 GO
@@ -46,7 +45,6 @@ GO
 CREATE PROCEDURE SP_TRATA_CSV_CARTAO
 AS
 BEGIN
-    SET NOCOUNT ON;
   
     UPDATE ##temp_cartao_bruto 
 	SET
@@ -83,7 +81,7 @@ BEGIN
   
     INSERT INTO ##temp_cartao_convertido
     SELECT
-        (CASE WHEN ISDATE(DATATRANSAÇAO) = 1 THEN CONVERT(DATE, DATATRANSAÇAO, 103) ELSE NULL END),
+		CONVERT(DATE, CONCAT('01', '-', MÊSEXTRATO, '-', ANOEXTRATO), 103),
         TRY_CAST(REPLACE(VALORTRANSAÇAO, ',', '.') AS DECIMAL(18, 2)),
         DATEFROMPARTS(TRY_CAST(ANOEXTRATO AS INT), TRY_CAST(MÊSEXTRATO AS INT), 1),
         TRY_CAST(CODIGOORGAOSUPERIOR AS INT), NOMEORGAOSUPERIOR,
@@ -98,46 +96,73 @@ CREATE PROCEDURE SP_CARREGA_CSV_CARTAO
 AS
 BEGIN
 
+	WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
+	    SELECT 
+	        IdOrgaoSuperior,
+	        NomeOrgaoSuperior,
+	        ROW_NUMBER() OVER(PARTITION BY IdOrgaoSuperior ORDER BY IdOrgaoSuperior) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
+	    FROM ##temp_cartao_convertido
+	    WHERE IdOrgaoSuperior <> 0 AND	IdOrgaoSuperior IS NOT NULL															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
+	)
+	INSERT INTO OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)				--Preenchimento da tabela OrgaoSuperior
+	SELECT IdOrgaoSuperior, NomeOrgaoSuperior
+	FROM CTE
+	WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+	  AND NOT EXISTS (								--Verificando se o valor já existe na tabela principal
+	      SELECT 1 FROM OrgaoSuperior o
+	      WHERE o.IdOrgaoSuperior = CTE.IdOrgaoSuperior
+	  );
+
+     WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
+		SELECT 
+		    IdOrgaoSubordinado,
+		    NomeOrgaoSubordinado,
+			IdOrgaoSuperior,
+		    ROW_NUMBER() OVER(PARTITION BY IdOrgaoSubordinado ORDER BY IdOrgaoSubordinado) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
+		FROM ##temp_cartao_convertido
+		WHERE IdOrgaoSubordinado <> 0 AND	IdOrgaoSubordinado IS NOT NULL															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
+)
+		INSERT INTO OrgaoSubordinado (IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior)				--Preenchimento da tabela OrgaoSuperior
+		SELECT IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior	
+		FROM CTE
+		WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+			AND NOT EXISTS (								--Verificando se o valor já existe na tabela principal
+		SELECT 1 FROM OrgaoSubordinado o
+		WHERE o.IdOrgaoSubordinado = CTE.IdOrgaoSubordinado
+  );
 
 
-    INSERT INTO dbo.OrgaoSuperior (IdOrgaoSuperior, NomeOrgaoSuperior)
-    SELECT DISTINCT IdOrgaoSuperior, NomeOrgaoSuperior 
-	FROM ##temp_cartao_convertido temp 
-	WHERE IdOrgaoSuperior IS NOT NULL AND NOT EXISTS 
-	(SELECT 1 FROM dbo.OrgaoSuperior WHERE IdOrgaoSuperior = temp.IdOrgaoSuperior);
+	  WITH CTE AS (				--Criação de uma CTE para selecionar os dados necessários, e principalmente para a criação de um ROW_NUMBER que será usado para diferenciar os dados iguais dentro da tabela temporaria
+	    SELECT 
+	        IdUnidadeGestora,
+	        NomeUnidadeGestora,
+			IdOrgaoSuperior,
+	        ROW_NUMBER() OVER(PARTITION BY IdUnidadeGestora ORDER BY IdUnidadeGestora) AS rn  --Aqui estamos criando uma sequência contendo os valores repitidos da tabela. Para que em seu preenchimento não haja duplicatas de uma PK
+	    FROM ##temp_cartao_convertido
+	    WHERE IdUnidadeGestora <> 0 AND	IdUnidadeGestora IS NOT NULL															--Estamos excluindo os que contém '0' da consulta, porque são valores invalidos
+	)
+	INSERT INTO UnidadeGestora (IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior)				--Preenchimento da tabela OrgaoSuperior
+	SELECT IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior
+	FROM CTE
+	WHERE rn = 1									--Pegando apenas os primeiros da sequencia criada anteriormente para evitar duplicadas
+	  AND NOT EXISTS (								--Verificando se o valor já existe na tabela principal
+	      SELECT 1 FROM UnidadeGestora o
+	      WHERE o.IdUnidadeGestora = CTE.IdUnidadeGestora
+	  );
 
-    INSERT INTO dbo.OrgaoSubordinado (IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior)
-    SELECT DISTINCT IdOrgaoSubordinado, NomeOrgaoSubordinado, IdOrgaoSuperior 
-	FROM ##temp_cartao_convertido temp 
-	WHERE IdOrgaoSubordinado IS NOT NULL 
-	AND NOT EXISTS (
-	SELECT 1 
-	FROM dbo.OrgaoSubordinado 
-	WHERE IdOrgaoSubordinado = temp.IdOrgaoSubordinado);
-
-    INSERT INTO dbo.UnidadeGestora (IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior)
-    SELECT DISTINCT IdUnidadeGestora, NomeUnidadeGestora, IdOrgaoSuperior 
-	FROM ##temp_cartao_convertido temp 
-	WHERE IdUnidadeGestora IS NOT NULL AND NOT EXISTS 
-	(SELECT 1 FROM dbo.UnidadeGestora 
-	WHERE IdUnidadeGestora = temp.IdUnidadeGestora);
-
+ 
     
-    DECLARE @DataProvisoria DATE;
-    SELECT TOP 1 @DataProvisoria = DataExtrato FROM ##temp_cartao_convertido;
-    SET @DataProvisoria = ISNULL(@DataProvisoria, '1900-01-01');
-
-    
-    DECLARE @UltimoId BIGINT = (SELECT ISNULL(MAX(IdGastosCartao), 0) FROM dbo.GastosCartao);
-    INSERT INTO dbo.GastosCartao (IdGastosCartao, DataTransacao, ValorTransacao, DataExtrato, IdOrgaoSuperior, IdOrgaoSubordinado, IdUnidadeGestora, IdMandato)
+    INSERT INTO dbo.GastosCartao (DataTransacao, ValorTransacao, DataExtrato, IdOrgaoSuperior, IdOrgaoSubordinado, IdUnidadeGestora, IdMandato)
     SELECT
-        @UltimoId + ROW_NUMBER() OVER(ORDER BY (SELECT NULL)),
-        ISNULL(temp.DataTransacao, @DataProvisoria), 
-        temp.ValorTransacao, temp.DataExtrato,
-        temp.IdOrgaoSuperior, temp.IdOrgaoSubordinado, temp.IdUnidadeGestora,
-        ISNULL(m.IdMandato, 1) 
+        temp.DataTransacao,
+        temp.ValorTransacao, 
+		temp.DataExtrato,
+        temp.IdOrgaoSuperior, 
+		temp.IdOrgaoSubordinado, 
+		temp.IdUnidadeGestora,
+        m.IdMandato
     FROM ##temp_cartao_convertido AS temp
-    LEFT JOIN dbo.Mandato AS m ON temp.DataTransacao BETWEEN m.DataInicio AND ISNULL(m.DataFim, '9999-12-31');
+    JOIN dbo.Mandato m ON temp.DataTransacao >= m.DataInicio  AND (temp.DataTransacao <= m.DataFim OR m.DataFim IS NULL);	
 END;
 GO
 
@@ -146,11 +171,7 @@ CREATE PROCEDURE SP_ETL_CARTAO
     @CAMINHO_CSV VARCHAR(255)
 AS
 BEGIN
-    SET NOCOUNT ON;
-   
-    
-    
-  
+ 
     EXEC SP_EXTRAI_CSV_CARTAO @CAMINHO_DO_ARQUIVO = @CAMINHO_CSV;
     
     

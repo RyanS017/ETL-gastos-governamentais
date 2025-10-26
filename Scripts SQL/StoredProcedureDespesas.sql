@@ -66,7 +66,7 @@ BEGIN
         FIELDTERMINATOR = '';'' ,
         ROWTERMINATOR = ''0x0A'',
         FIRSTROW = 2,
-        CODEPAGE = ''1252''
+        CODEPAGE = ''RAW''
     );';							--Instrução para realização do BULK INSERT
 
     EXEC sp_executesql @sql;     --Execução do que foi armazenado (sp_executesql é um procedimento de sistema para a execução de um comando SQL através de uma string de texto)

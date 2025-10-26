@@ -145,7 +145,7 @@ CREATE TABLE Despesas (
 );
 
 CREATE TABLE GastosCartao (
-    IdGastosCartao INT PRIMARY KEY NOT NULL,
+    IdGastosCartao INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
     DataTransacao DATE NOT NULL,
     ValorTransacao DECIMAL (18,2),
     DataExtrato DATE,
