@@ -2,15 +2,15 @@ USE master;
 GO
 
 CREATE LOGIN Login_Visualizador 
-WITH PASSWORD = 'SenhaForte1!', CHECK_POLICY = ON;
+WITH PASSWORD = 'Vizualidor123!', CHECK_POLICY = ON;
 GO
 
 CREATE LOGIN Login_Analista 
-WITH PASSWORD = 'SenhaForte2!', CHECK_POLICY = ON;
+WITH PASSWORD = 'Analista123!', CHECK_POLICY = ON;
 GO
 
 CREATE LOGIN Login_Desenvolvedor 
-WITH PASSWORD = 'SenhaForte3!', CHECK_POLICY = ON;
+WITH PASSWORD = 'Desenvolvedor123!!', CHECK_POLICY = ON;
 GO
 
 

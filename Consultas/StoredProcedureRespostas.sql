@@ -126,5 +126,6 @@ FULL JOIN DurantePandemia d ON p.NomeFuncao = d.NomeFuncao
 ORDER BY PercentualVariacao DESC;
 END;
 
-
+Select * From Despesas
+SELECT DISTINCT Ano FROM vw_DespesasCOVID;
 

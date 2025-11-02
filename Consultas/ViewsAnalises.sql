@@ -68,5 +68,5 @@ YEAR(d.DataLancamento) AS Ano,
 SUM(d.ValorPago) AS TotalPago
 FROM Despesas d
 JOIN Funcao f ON d.IdFuncao = f.IdFuncao
-WHERE YEAR(d.DataLancamento) BETWEEN 2020 AND 2022
+WHERE YEAR(d.DataLancamento) BETWEEN 2019 AND 2022
 GROUP BY f.NomeFuncao, YEAR(d.DataLancamento);

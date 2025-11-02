@@ -1,6 +1,6 @@
-EXEC sp_PerguntaInvestimentosFuncao;
+EXEC sp_PerguntaMaioresNumerosFuncao;
 EXEC sp_AumentoAnosEleitorais;
 EXEC sp_MaioresGastosCartao;
 EXEC sp_MaioresGastosViagens;
-EXEC sp_VariacaoOrcamentariaPorFuncao;
+EXEC sp_VariacaoOrcamentariaPorMandatoAno;
 EXEC sp_PandemiaCovid;
