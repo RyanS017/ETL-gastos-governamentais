@@ -67,7 +67,6 @@ Inicie o download do arquivo (normalmente em formato CSV) e salve-o na pasta de 
 * [**Banco de Dados**](https://drive.google.com/file/d/1Q2qH_xuz_1ukcCO1ZSpMBO4LwkLDFoTA/view?usp=sharing) (Backup do Banco de Dados)
 > [!IMPORTANT]
 > Logins para conseguir utilizar o backup do banco de dados se encontram no seguinte caminho: \Segurança\PerfisDeAcesso\CriarLogins.sql
-> 
 > Se faz necessária conta nessas plataformas
 
 ## Tecnologias Utilizadas
