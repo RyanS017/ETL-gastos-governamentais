@@ -6,7 +6,7 @@ BEGIN
 SELECT NomePresidente, NomeFuncao,
 SUM(TotalPago) AS TotalInvestido
 FROM vw_DespesasPorMandatoFuncao
-WHERE NomeFuncao IN ('Ciência e Tecnologia', 'Saúde', 'Educação', 'Segurança Pública')
+WHERE NomeFuncao IN ('CiÃªncia e Tecnologia', 'SaÃºde', 'EducaÃ§Ã£o', 'SeguranÃ§a PÃºblica')
 GROUP BY NomePresidente, NomeFuncao
 ORDER BY NomeFuncao, TotalInvestido DESC;
 END;
@@ -44,7 +44,7 @@ ORDER BY PercentualAumento DESC;
 END;
 
 
--- Pergunta sobre gastos com cartão de pagamento do governo federal
+-- Pergunta sobre gastos com cartÃ£o de pagamento do governo federal
 
 CREATE PROCEDURE sp_MaioresGastosCartao
 AS 
@@ -57,7 +57,7 @@ ORDER BY SUM(TotalGastoCartao) DESC;
 END;
 
 
--- Pergunta sobre gastos com cartão de pagamento do governo federal
+-- Pergunta sobre gastos com viagens
 
 CREATE PROCEDURE sp_MaioresGastosViagens
 AS
@@ -69,7 +69,7 @@ GROUP BY NomePresidente
 ORDER BY SUM(ValorGasto) DESC;
 END;
 
--- Setores com redução ou aumento orçamentário
+-- Setores com reduÃ§Ã£o ou aumento orÃ§amentÃ¡rio
 
 CREATE PROCEDURE sp_VariacaoOrcamentariaPorMandatoAno
 @NomePresidente NVARCHAR(100) = NULL,
@@ -96,7 +96,7 @@ WHERE (@NomePresidente IS NULL OR NomePresidente = @NomePresidente) AND (@NomeFu
 ORDER BY IdMandato, NomeFuncao, AnoBase;
 END;
 
--- Impacto da pandemia da COVID-19 nos padrões de gasto público
+-- Impacto da pandemia da COVID-19 nos padrÃµes de gasto pÃºblico
 
 CREATE PROCEDURE sp_PandemiaCovid
 AS
